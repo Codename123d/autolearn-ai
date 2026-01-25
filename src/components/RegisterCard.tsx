@@ -23,7 +23,7 @@ export default function RegisterCard() {
                     {/* Email */}
                     <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="email" placeholder="Email address" className="w-full pl-12 pr-4 py-4 rounded-xl bg-slate-50 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"/>
+                        <input type="email" placeholder="Email address" className="w-full pl-12 pr-4 py-4 rounded-xl bg-slate-50 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
 
                     {/* Password */}
@@ -35,16 +35,46 @@ export default function RegisterCard() {
                         </div>
                     </div>
 
-                    {/* Organization */}
-                    <div className="relative">
-                        <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="text" placeholder="Organization (optional)" className="w-full pl-12 pr-4 py-4 rounded-xl bg-slate-50 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    {/* Terms */}
+                    <label className="flex items-center gap-3 text-sm text-slate-600">
+                        <input type="checkbox" className="accent-indigo-600 w-4 h-4" />
+                        I agree to the{""}
+                        <span className="text-indigo-600 font-medium cursor-pointer">
+                            Terms of Service
+                        </span>
+                    </label>
+
+                    {/* Create Account */}
+                    <button className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-semibold shadow-lg hover:opacity-90 transition">
+                        Create Account
+                    </button>
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-4 text-slate-400 text-sm">
+                        <div className="flex-1 h-px bg-slate-200" />
+                        OR
+                        <div className="flex-1 h-px bg-slate-200" />
                     </div>
 
-                    {/* Terms */}
-                    
+                    {/* Google */}
+                    <button className="w-full py-3 rounded-xl border flex items-center justify-center gap-3 hover:bg-slate-50 transition">
+                        <img src="/logos/google-icon-svgrepo-com.svg" alt="Google" className="w-5 h-5" />
+                        Sign up with Google
+                    </button>
+
+                    {/* Facebook */}
+                    <button className="w-full py-3 rounded-xl border flex items-center justify-center gap-3 hover:bg-slate-50 transition">
+                        <img src="/logos/facebook-icon-logo-svgrepo-com.svg" alt="Facebook" className="w-5 h-5" />
+                        Sign up with Facebook
+                    </button>
                 </form>
             </div>
+
+            {/* Right: Illustration */}
+            <div className="hidden md:flex items-center justify-center">
+                <img src="/logos/avatar image.png" alt="Login Illustration" className="w-full max-w-sm" />
+            </div>
+
         </div>
     );
 }
