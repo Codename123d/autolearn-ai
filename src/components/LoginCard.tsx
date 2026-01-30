@@ -1,9 +1,40 @@
 // src/components/LoginCard.tsx
 "use client";
-
 import { Mail, Lock, Eye } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginCard() {
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function handleLogin() {
+        setLoading(true);
+        setError(null);
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            setError(error.message);
+        } else {
+            router.push(redirectTo);
+        }
+
+        setLoading(false);
+    }
+
     return (
         <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Left: Form */}
@@ -13,15 +44,20 @@ export default function LoginCard() {
                 {/* Email */}
                 <div className="mb-5 relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="email" placeholder="Email address" className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <input type="email" placeholder="Email address" value={email} className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" onChange={(e) => setEmail(e.target.value)} />
                 </div>
 
                 {/* Password */}
                 <div className="mb-5 relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="password" placeholder="Password" className="w-full pl-12 pr-12 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                    <Eye className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer" />
+                    <input type={showPassword ? "text" : "password"} value={password} placeholder="Password" className="w-full pl-12 pr-12 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" onChange={(e) => setPassword(e.target.value)} />
+                    <Eye className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer" onClick={() => setShowPassword(!showPassword)} />
                 </div>
+
+                {/* Error */}
+                {error && (
+                    <p className="text-sm text-red-600 mb-4">{error}</p>
+                )}
 
                 {/* Remember / Forgot */}
                 <div className="flex items-center justify-between text-sm mb-8">
@@ -34,8 +70,8 @@ export default function LoginCard() {
                 </div>
 
                 {/* Sign In Button */}
-                <button className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold text-lg shadow-md hover:opacity-90 transition">
-                    Sign In
+                <button onClick={handleLogin} disabled={loading} className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold text-lg shadow-md hover:opacity-90 transition">
+                    {loading ? "Signing in..." : "Sign In"}
                 </button>
 
                 {/* Divider */}

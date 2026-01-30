@@ -1,8 +1,20 @@
 // src/app/library/page.tsx
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { createSupabaseServer } from "@/lib/supabase/server";
 
-export default function LibraryPage() {
+export default async function LibraryPage() {
+    const supabase = await createSupabaseServer();
+
+    const { data: lessons, error } = await supabase
+        .from("ai_lessons")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error(error);
+    }
+
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
             <div className="mx-auto max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
@@ -32,10 +44,13 @@ export default function LibraryPage() {
 
                         {/* Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <LibraryCard title="Automate Email Responses" desc="Learn how to use AI to handle email replies efficiently." />
-                            <LibraryCard title="Write Weekly Progress Summary" desc="Automate the task of summarizing weekly progress reports." />
-                            <LibraryCard title="Organize Meetings and Reminders" desc="Use AI to set up and manage your meetings and reminders." />
-                            <LibraryCard title="Save Hours on Repetitive Reporting" desc="Automate repetitive reporting tasks and save significant time." />
+                            {lessons?.length ? (
+                                lessons.map((lesson) => (
+                                    <LibraryCard key={lesson.id} lesson={lesson} />
+                                ))
+                            ) : (
+                                <EmptyState />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -47,11 +62,11 @@ export default function LibraryPage() {
 /*--------------------------------------------------------*/
 /* Components */
 /*--------------------------------------------------------*/
-function LibraryCard({ title, desc }: { title: string; desc: string }) {
+function LibraryCard({ lesson }: { lesson: any }) {
     return (
         <div className="bg-white rounded-2xl shadow p-6 flex gap-4">
 
-            {/* Image Placeholder */}
+            {/* Icon */}
             <div className="w-20 h-20 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-semibold">
                 AI
             </div>
@@ -59,11 +74,13 @@ function LibraryCard({ title, desc }: { title: string; desc: string }) {
             {/* Content */}
             <div className="flex-1">
                 <span className="inline-block mb-2 text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 font-medium">
-                    AI Generated
+                    {lesson.job_title}
                 </span>
 
-                <h3 className="font-semibold">{title}</h3>
-                <p className="text-sm text-slate-500 mb-4">{desc}</p>
+                <h3 className="font-semibold">{lesson.lesson_title}</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                    {lesson.task_goal}
+                </p>
 
                 <div className="flex gap-3">
                     <button className="px-4 py-2 rounded-lg border text-sm hover:bg-slate-100">
@@ -74,6 +91,19 @@ function LibraryCard({ title, desc }: { title: string; desc: string }) {
                     </button>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function EmptyState() {
+    return (
+        <div className="col-span-full text-center py-16 text-slate-500">
+            <p className="text-lg font-medium mb-2">
+                No AI generated lessons found.
+            </p>
+            <p className="text-sm">
+                Generate your first lesson plan to see it appear here.
+            </p>
         </div>
     );
 }

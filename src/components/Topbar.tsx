@@ -4,12 +4,15 @@
 import { Search, HelpCircle, User, X, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 type TopbarProps = {
     title: string;
 };
 
 export default function Topbar({ title }: TopbarProps) {
+    const router = useRouter();
     const [searchOpen, setSearchOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
@@ -27,6 +30,15 @@ export default function Topbar({ title }: TopbarProps) {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    async function handleLogout() {
+        setMenuOpen(false);
+
+        await supabase.auth.signOut();
+
+        router.push("/login");
+        router.refresh(); // ensures server state resets
+    }
 
     return (
         <header className="h-20 bg-gradient-to-r from-indigo-500 to-cyan-400 flex items-center justify-between px-8 text-white">
@@ -79,6 +91,7 @@ export default function Topbar({ title }: TopbarProps) {
                             <button onClick={() => {
                                 setMenuOpen(false);
                                 console.log("Logout clicked");
+                                handleLogout();
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 transition text-sm">
                                 <LogOut size={16} /> Logout

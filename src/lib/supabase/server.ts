@@ -1,5 +1,5 @@
 // src/lib/supabase/server.ts
-import { createServerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export const createSupabaseServer = async () => {
@@ -12,8 +12,14 @@ export const createSupabaseServer = async () => {
             cookies: { 
                 get (name: string) {
                     return cookieStore.get(name)?.value;
-                }
-            }
+                },
+                set(name: string, value: string, options: any) {
+                    cookieStore.set({ name, value, ...options });
+                },
+                remove(name: string, options: any) {
+                    cookieStore.set({ name, value: "", ...options });
+                },
+            },
         }
     );
 };

@@ -1,10 +1,31 @@
 // src/app/dashboard/page.tsx
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { createSupabaseServer } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+    const supabase =  await createSupabaseServer();
+    
+    // SECURE: validate with Supabase Auth server
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+        redirect("/login");
+    }
+
+    // Fetch user plans
+    const { data: plans } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-blue--500 to-cyan-400 p-6">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 p-6">
             <div className="flex h-full w-full rounded-3xl overflow-hidden bg-white shadow-2xl">
 
                 {/* Sidebar */}
@@ -25,9 +46,15 @@ export default function DashboardPage() {
                             </button>
 
                             <Card title="Recent Plans">
-                                <PlanItem title="Better progress reports" meta="20 min" />
-                                <PlanItem title="Urgent planning" meta="40 min" />
-                                <PlanItem title="Task time scoring" meta="Weekly" />
+                                {plans?.length ? (
+                                    plans.map((plan) => (
+                                        <PlanItem key={plan.id} title={plan.title} meta={`${plan.duration} min`} />
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-500">
+                                        No plans yet
+                                    </p>
+                                )}
                             </Card>
                         </section>
 
@@ -40,7 +67,7 @@ export default function DashboardPage() {
                             </Card>
 
                             <Card title="Skill Baseline Quiz" badge="Must Have">
-                                <p className="text-sm text-gray-600" mb-4>
+                                <p className="text-sm text-gray-600 mb-4">
                                     Assess your current skills to tailor your learning plan.
                                 </p>
                                 <button className="px-4 py-2 bg-indigo-500 text-white rounded-lg">
@@ -68,9 +95,9 @@ export default function DashboardPage() {
 
                             <Card title="Quick Stats">
                                 <div className="grid grid-cols-3 gap-4 text-center">
-                                    <Stat label="Plans" value="4" />
-                                    <Stat label="Complete" value="75%" />
-                                    <Stat label="Time" value="34h" />
+                                    <Stat label="Plans" value={plans?.length} />
+                                    <Stat label="Complete" value={plans?.length} />
+                                    <Stat label="Time" value={plans?.length} />
                                 </div>
                             </Card>
                         </section>

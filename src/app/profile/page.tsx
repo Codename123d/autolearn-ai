@@ -5,6 +5,33 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 
 export default function ProfilePage() {
+
+    const profileData = {
+        user: {
+            name: "John Doe",
+            role: "Project Manager",
+            email: "john.doe@gmail.com",
+            location: "London, UK",
+            memberSince: "March 2020",
+            avatar: "/logos/AvatarIcon.png",
+        },
+        stats: [
+            { label: "Tasks Plans", value: "28", icon: "tasks" },
+            { label: "Completion Rate", value: "85%", icon: "rate" },
+            { label: "Time Saved", value: "124 hrs", icon: "time" },
+        ],
+        achievements: [
+            { title: "Task Master", desc: "50+ Tasks Completed", icon: "check" },
+            { title: "Speed Optimizer", desc: "80 Hours Saved", icon: "clock" },
+            { title: "AI Innovator", desc: "Advanced AI User", icon: "brain" },
+            { title: "Productivity Pro", desc: "100% Completion Rate", icon: "star" },
+        ],
+        skills: [
+            { label: "Prompt Creation", level: "Advanced", percentage: 85 },
+            { label: "Workflow Automation", level: "Intermediate", percentage: 65 },
+        ],
+    };
+
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
             <div className="mx-auto max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
@@ -23,9 +50,9 @@ export default function ProfilePage() {
                         {/* Left: Profile card */}
                         <div className="bg-white rounded-2xl shadow p-6">
                             <div className="flex flex-col items-center text-center">
-                                <img src="/logos/AvatarIcon.png" alt="Profile" className="w-24 h-24 rounded-full border mb-4" />
-                                <h2 className="text-xl font-semibold">John Doe</h2>
-                                <p className="text-slate-500">Project Manager</p>
+                                <img src={profileData.user.avatar} alt="Profile" className="w-24 h-24 rounded-full border mb-4" />
+                                <h2 className="text-xl font-semibold">{profileData.user.name}</h2>
+                                <p className="text-slate-500">{profileData.user.role}</p>
 
                                 <div className="flex gap-3 mt-4">
                                     <button className="px-4 py-2 rounded-xl border flex items-center gap-2 text-sm">
@@ -39,13 +66,13 @@ export default function ProfilePage() {
 
                             <div className="mt-6 space-y-3 text-sm text-slate-600">
                                 <div className="flex items-center gap-2">
-                                    <Mail size={16} /> john.doe@gmail.com
+                                    <Mail size={16} /> {profileData.user.email}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Calendar size={16} /> Member since March 2020
+                                    <Calendar size={16} /> Member since {profileData.user.memberSince}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <MapPin size={16} /> Lonodon, UK
+                                    <MapPin size={16} /> {profileData.user.location}
                                 </div>
                             </div>
                         </div>
@@ -56,9 +83,18 @@ export default function ProfilePage() {
                             <div className="bg-white rounded-2xl shadow p-6">
                                 <h3 className="text-lg font-semibold mb-4">Productivity Stats</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <StatCard icon={<CheckCircle />} label="Tasks Plans" value="28" />
-                                    <StatCard icon={<Zap />} label="Completion Rate" value="85%" />
-                                    <StatCard icon={<Clock />} label="Time Saved" value="124 hrs" />
+                                    {profileData.stats.map((stat) => (
+                                        <StatCard
+                                            key={stat.label}
+                                            icon={
+                                                stat.icon === "tasks" ? <CheckCircle /> :
+                                                stat.icon === "rate" ? <Zap /> :
+                                                <Clock />
+                                            }
+                                            label={stat.label}
+                                            value={stat.value}
+                                        />
+                                    ))}
                                 </div>
                             </div>
 
@@ -66,18 +102,33 @@ export default function ProfilePage() {
                             <div className="bg-white rounded-2xl shadow p-6">
                                 <h3 className="text-lg font-semibold mb-4">Achievements</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <Achievement icon={<CheckCircle />} title="Task Master" desc="50+ Tasks Completed" />
-                                    <Achievement icon={<Clock />} title="Speed Optimizer" desc="80 Hours Saved" />
-                                    <Achievement icon={<Brain />} title="AI Innovator" desc="Advanced AI User" />
-                                    <Achievement icon={<Star />} title="Productivity Pro" desc="100% Completion Rate" />
+                                    {profileData.achievements.map((a) => (
+                                        <Achievement
+                                            key={a.title}
+                                            icon={
+                                                a.icon === "check" ? <CheckCircle /> :
+                                                a.icon === "clock" ? <Clock /> :
+                                                a.icon === "brain" ? <Brain /> :
+                                                <Star />
+                                            }
+                                            title={a.title}
+                                            desc={a.desc}
+                                        />
+                                    ))}
                                 </div>
                             </div>
 
                             {/* AI Skills */}
                             <div className="bg-white rounded-2xl shadow p-6">
                                 <h3 className="text-lg font-semibold mb-4">AI Skills</h3>
-                                <Skill label="Prompt Creation" level="Advanced" percentage={85} />
-                                <Skill label="Workflow Automation" level="Intermediate" percentage={65} />
+                                {profileData.skills.map((skill) => (
+                                    <Skill
+                                        key={skill.label}
+                                        label={skill.label}
+                                        level={skill.level}
+                                        percentage={skill.percentage}
+                                    />
+                                ))}
                             </div>
                         </div>
                     </div>
