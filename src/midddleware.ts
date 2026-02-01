@@ -1,7 +1,6 @@
 // src/middleware.ts
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import path from "path";
 
 const PUBLIC_ROUTES = ["/", "/help", "/about"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password"];

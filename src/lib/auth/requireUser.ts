@@ -18,5 +18,5 @@ export async function requireUser(redirectPath?: string) {
         redirect(`/login${redirectTo}`)
     };
 
-    return user;
+    return { user, supabase };
 }

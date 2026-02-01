@@ -4,7 +4,8 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
     const { email, password } = await request.json();
-    const supabase = createSupabaseServer();
+
+    const supabase = await createSupabaseServer();
 
     const { data, error } = await supabase.auth.signInWithPassword({
         email,

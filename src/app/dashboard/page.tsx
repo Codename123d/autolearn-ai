@@ -1,20 +1,10 @@
 // src/app/dashboard/page.tsx
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/auth/requireUser";
 
 export default async function DashboardPage() {
-    const supabase =  await createSupabaseServer();
-    
-    // SECURE: validate with Supabase Auth server
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/login");
-    }
+    const { user, supabase } = await requireUser("/dashboard");
 
     // Fetch user plans
     const { data: plans } = await supabase
