@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreatePlanPage({ userId }: { userId: string }) {
     const [jobRole, setJobRole] = useState("");
@@ -12,13 +13,12 @@ export default function CreatePlanPage({ userId }: { userId: string }) {
     const [tasks, setTasks] = useState("");
     const [goals, setGoals] = useState("");
     const [skillLevel, setSkillLevel] = useState("");
-
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
+    const router = useRouter();
 
     async function handleGenerate() {
         setLoading(true);
-        setResult(null);
+
         try {
             const res = await fetch("/api/generate", {
                 method: "POST",
@@ -40,9 +40,10 @@ export default function CreatePlanPage({ userId }: { userId: string }) {
                 throw new Error(data.error || "Failed to generate learning plan");
             }
 
-            setResult(data.content);
+            router.push(`/learning-plan/${data.learningPlanId}`);
+
         } catch (err: any) {
-            setResult(`Error: ${err.message}`);
+            alert(err.message);
         } finally {
             setLoading(false);
         }
@@ -149,18 +150,6 @@ export default function CreatePlanPage({ userId }: { userId: string }) {
                                     </button>
                                 </div>
                             </div>
-
-                            {/* Result */}
-                            {result && (
-                                <div className="mt-10 bg-white rounded-xl shadow-md p-8">
-                                    <h3 className="font-semibold mb-4 text-slate-800">
-                                        Generated Learning Plan
-                                    </h3>
-                                    <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
-                                        {result}
-                                    </pre>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

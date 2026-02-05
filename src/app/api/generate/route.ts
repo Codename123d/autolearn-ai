@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import OpenAi from "openai"
+import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -15,10 +15,16 @@ export async function POST(req: Request) {
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            { 
+            {
                 cookies: {
                     get(name: string) {
                         return cookieStore.get(name)?.value;
+                    },
+                    set(name: string, value: string, options) {
+                        cookieStore.set({ name, value, ...options });
+                    },
+                    remove(name: string, options) {
+                        cookieStore.set({ name, value: "", maxAge: 0, ...options });
                     },
                 },
             },
@@ -51,7 +57,6 @@ export async function POST(req: Request) {
         User profile:
         - Job role: ${jobRole}
         - Industry: ${industry}
-        - Experience level: {{experienceLevel}}
         - Technical skill level: ${skillLevel}
 
         Job tasks:
@@ -60,141 +65,117 @@ export async function POST(req: Request) {
         Goals:
         ${goals}
 
-        Constraints:
-        {{constraints}}
+        IMPORTANT RULES
+        - You must include at least one lesson about GDPR and the Data Protection Act 2018
+        - Mark GDPR-related lessons with "is_gdpr": true
+        - DO NOT suggest auto-executing actions in external systems
+        - Focus on safe, ethical, workplace AI usage
+        - Use clear, professional language
+        - DO NOT include markdown
+        - DO NOT include explanations
+        - DO NOT include any text outside of the JSON 
 
-        Requirements:
-        - Include at least one lesson on GDPR and the Data Protection Act 2018
-        - DO NOT SUGGEST auto-executing actions in a external systems
-        - Focus on safe, ethical AI usage at work.
+        RESPONSE FORMAT (STRICT JSON ONLY)
+        {
+            "introduction": string, 
+            "lessons": [
+                {
+                    "title": string,
+                    "content": string,
+                    "is_gdpr": boolean
+                },
+            ],
+            "final_recap": string
+        }
 
-        Output Format:
-        - Introduction
-        - Lesson Breakdown (step-by-step)
-        - Practical examples
-        - Final recap
+        If you do not follow the JSON format exactly, the response is invalid.
         `;
 
-        const completion = await openai.chat.completions.create({
+        const completion = await openai.responses.create({
             model: "gpt-5-mini",
-            messages: [{
-                role: "user",
-                content: prompt
-            }],
+            input: prompt,
         });
 
-        const generatedContent = completion.choices[0].message.content || "";
+        const raw = completion.output_text;
 
-        function parseLessons(content: string) {
-            const lessonSection = content.split("Lesson Breakdown:")[1];
-
-            if (!lessonSection) return [];
-
-            const rawLessons = lessonSection
-                .split(/Lesson\s+\d+:/i)
-                .slice(1);
-
-            return rawLessons.map((lesson, index) => {
-                const trimmed = lesson.trim();
-
-                const firstLineEnd = trimmed.indexOf("\n");
-                const title = 
-                    firstLineEnd !== -1
-                        ? trimmed.slice(0, firstLineEnd).trim()
-                        : `Lesson ${index + 1}`;
-
-                return {
-                    title,
-                    content: trimmed,
-                    lesson_order: index + 1,
-                    is_gdpr: /gdpr|data protection act/i.test(trimmed),
-                };
-            });
-        }
-
-        // Store in database
-        // Create intake form
-        const { data: intakeForm, error: insertError } = await supabase
-            .from("job_intake_forms")
-            .insert({
-                user_id: user.id,
-                job_role: jobRole,
-                industry,
-                tasks,
-                goals,
-                skill_level: skillLevel.toLowerCase(),
-            })
-            .select()
-            .single();
-        
-        if (insertError) {
-            console.error(insertError);
+        if (!raw) {
             return NextResponse.json(
-                { error: "Failed to save learning plan" },
+                { error: "Empty response" },
                 { status: 500 }
             );
         }
 
-        // Create learning plan
-        const { data: learningPlan, error: planError } = await supabase
-            .from("learning_plans")
-            .insert({
-                user_id: user.id,
-                intake_form_id: intakeForm.id,
-                title: `AI Learning Plan for ${jobRole}`,
-                introduction: generatedContent?.split("Lesson Breakdown")[0],
-                final_recap: "See lesson content for full recap.",
-                ai_model: "gpt-5-mini",
-                status: "generated",
-            })
-            .select()
-            .single();
-
-            if (planError) {
-            console.error(planError);
+        let parsed: {
+        introduction: string, 
+        final_recap: string,
+        lessons: {
+            title: string,
+            content: string,
+            lesson_order?: number,
+            is_gdpr: boolean,
+        }[];
+    };
+        try {
+            parsed = JSON.parse(raw);
+        } catch {
             return NextResponse.json(
-                { error: "Failed to save learning plan" },
+                { error: "Failed to parse AI response" },
                 { status: 500 }
             );
         }
 
-        
-        const lessons = parseLessons(generatedContent);
-
-        if (lessons.length === 0) {
+        if (!parsed.lessons?.length) {
             return NextResponse.json(
                 { error: "No lessons generated" },
                 { status: 500 }
             );
         }
 
-        const lessonRows = lessons.map(lesson => ({
-            lesson_plan_id: learningPlan.id,
-            title: lesson.title,
-            content: lesson.content,
-            lesson_order: lesson.lesson_order,
-            is_gdpr: lesson.is_gdpr,
+        parsed.lessons = parsed.lessons.map((lesson, index) => ({
+            ...lesson,
+            is_gdpr: lesson.is_gdpr === true,
+            lesson_order: index + 1,
         }));
 
-        const { error: lessonInsertError } = await supabase
-            .from("lessons")
-            .insert(lessonRows);
+        const hasGdprLesson = parsed.lessons.some(l => l.is_gdpr === true);
 
-        if (lessonInsertError) {
-            console.error(lessonInsertError);
+        if (!hasGdprLesson) {
             return NextResponse.json(
-                { error: "Failed to store lessons" },
+                { error: "AI did not generate a GDPR lesson" },
                 { status: 500 }
             );
         }
 
-        return NextResponse.json({
-            content: generatedContent,
-        });
+        const { data: learningPlanId, error: rpcError } = await supabase.rpc(
+            "create_learning_plan_with_lessons",
+            {
+                p_user_id: user.id,
+                p_job_role: jobRole,
+                p_industry: industry,
+                p_tasks: tasks,
+                p_goals: goals,
+                p_skill_level: skillLevel?.toLowerCase() ?? "beginner",
+                p_title: `AI Learning Plan for ${jobRole}`,
+                p_introduction: parsed.introduction,
+                p_final_recap: parsed.final_recap,
+                p_ai_model: "gpt-5-mini",
+                p_lessons: parsed.lessons,
+            }
+        );
+
+        if (rpcError) {
+            console.error(rpcError);
+            return NextResponse.json(
+                { error: "Failed to save learning plan" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true, learningPlanId });
     } catch (error) {
-        console.error(error);
+        console.error("Error generating learning plan:", error);
         return NextResponse.json(
-            { error: "Failed to generate content" },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }

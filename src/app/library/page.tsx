@@ -7,7 +7,7 @@ export default async function LibraryPage() {
     const supabase = await createSupabaseServer();
 
     const { data: lessons, error } = await supabase
-        .from("ai_lessons")
+        .from("lessons")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -74,7 +74,7 @@ function LibraryCard({ lesson }: { lesson: any }) {
             {/* Content */}
             <div className="flex-1">
                 <span className="inline-block mb-2 text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 font-medium">
-                    {lesson.job_title}
+                    {lesson.title}
                 </span>
 
                 <h3 className="font-semibold">{lesson.lesson_title}</h3>
