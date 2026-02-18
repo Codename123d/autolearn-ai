@@ -4,19 +4,23 @@
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function CreatePlanPage({ userId }: { userId: string }) {
-    const [jobRole, setJobRole] = useState("");
+export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: string; defaultJobRole: string; }) {
+    const [jobRole, setJobRole] = useState(defaultJobRole);
     const [industry, setIndustry] = useState("");
     const [tasks, setTasks] = useState("");
     const [goals, setGoals] = useState("");
     const [skillLevel, setSkillLevel] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const generationRef = useRef(false);
 
     async function handleGenerate() {
+        if (generationRef.current) return; // HARD STOP
+        generationRef.current = true;
         setLoading(true);
 
         try {
@@ -45,9 +49,27 @@ export default function CreatePlanPage({ userId }: { userId: string }) {
         } catch (err: any) {
             alert(err.message);
         } finally {
+            generationRef.current = false; // release lock
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        async function checkActivePlan() {
+            try {
+                const res = await fetch("/api/active-plan");
+                const data = await res.json();
+
+                if (data.plan?.id) {
+                    router.push(`/learning-plan/${data.plan.id}`);
+                }
+            } catch (err) {
+                console.error("Error checking active plan:", err);
+            }
+        }
+
+        checkActivePlan();
+    }, [router]);
 
     const isDisabled = 
         !jobRole || !industry || !tasks || !goals || !skillLevel || loading;
@@ -136,9 +158,9 @@ export default function CreatePlanPage({ userId }: { userId: string }) {
                                         <label className="text-sm font-medium text-slate-700">Skill Level</label>
                                         <select title="Skill Level" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)}>
                                             <option value="">Select Skill Level</option>
-                                            <option value="Beginner">Beginner</option>
-                                            <option value="Intermediate">Intermediate</option>
-                                            <option value="Advanced">Advanced</option>
+                                            <option value="beginner">Beginner</option>
+                                            <option value="intermediate">Intermediate</option>
+                                            <option value="advanced">Advanced</option>
                                         </select>
                                     </div>
                                 </div>
