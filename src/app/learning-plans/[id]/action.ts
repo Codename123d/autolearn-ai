@@ -1,4 +1,4 @@
-// src/app/learning-plan/[id]/action.ts
+// src/app/learning-plans/[id]/action.ts
 "use server";
 
 import { createServerClient } from "@supabase/ssr";

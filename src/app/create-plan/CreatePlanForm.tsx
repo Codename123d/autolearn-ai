@@ -15,6 +15,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
     const [goals, setGoals] = useState("");
     const [skillLevel, setSkillLevel] = useState("");
     const [loading, setLoading] = useState(false);
+    const [seniority, setSeniority] = useState("");
     const router = useRouter();
     const generationRef = useRef(false);
 
@@ -31,6 +32,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                 },
                 body: JSON.stringify({
                     jobRole,
+                    seniority,
                     industry,
                     tasks,
                     goals,
@@ -44,7 +46,9 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                 throw new Error(data.error || "Failed to generate learning plan");
             }
 
-            router.push(`/learning-plan/${data.learningPlanId}`);
+            router.push(`/learning-plans`);
+
+
 
         } catch (err: any) {
             alert(err.message);
@@ -72,7 +76,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
     }, [router]);
 
     const isDisabled = 
-        !jobRole || !industry || !tasks || !goals || !skillLevel || loading;
+        !jobRole || !seniority || !industry || !tasks || !goals || !skillLevel || loading;
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
@@ -93,7 +97,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                         </p>
 
                         {/* AI Side Illustration */}
-                        <div className="absolute right-10 top-4 hidden lg:block">
+                        <div className="absolute right-10 top-0 hidden lg:block">
                             <Image src="/logos/AI robot with checklist assistance.png" alt="AI robot with checklist assistance" width={220} height={220} />
                         </div>
                     </div>
@@ -114,25 +118,35 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                                     {/* Job Role */}
                                     <div className="flex flex-col gap-2">
                                         <label className="text-sm font-medium text-slate-700">Job Role</label>
-                                        <select title="jobRole" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={jobRole} onChange={(e) => setJobRole(e.target.value)}>
-                                            <option value="">Select your job role...</option>
-                                            <option>Project Manager</option>
-                                            <option>Software Developer</option>
-                                            <option>Data Analyst</option>
-                                            <option>Marketing Specialist</option>
+                                        <input type="text" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Backend Developer, Product Manager, DevOps Engineer..." value={jobRole} onChange={(e) => setJobRole(e.target.value)} />
+                                        <p className="text-xs text-slate-500">
+                                            Be specific - this improves the quality of your generated plan.
+                                        </p>
+                                    </div>
+
+                                    {/* Seniority Level */}
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-medium text-slate-700">
+                                            Seniority Level
+                                        </label>
+                                        <select title="Seniority Level" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={seniority} onChange={(e) => setSeniority(e.target.value)}>
+                                            <option value="">Select level</option>
+                                            <option>Intern</option>
+                                            <option>Junior</option>
+                                            <option>Mid-level</option>
+                                            <option>Senior</option>
+                                            <option>Lead</option>
+                                            <option>Manager</option>
+                                            <option>Director</option>
+                                            <option>VP</option>
+                                            <option>C-Level</option>
                                         </select>
                                     </div>
 
                                     {/* Industry */}
                                     <div className="flex flex-col gap-2">
                                         <label className="text-sm font-medium text-slate-700">Industry</label>
-                                        <select className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" title="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
-                                            <option value="">Select your industry...</option>
-                                            <option>Technology</option>
-                                            <option>Finance</option>
-                                            <option>Healthcare</option>
-                                            <option>Education</option>
-                                        </select>
+                                        <input type="text" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Finance, Healthcare, Tech, Retail..." value={industry} onChange={(e) => setIndustry(e.target.value)} />
                                     </div>
 
                                     {/* Tasks */}

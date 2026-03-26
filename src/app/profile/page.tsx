@@ -51,7 +51,7 @@ export default async function ProfilePage() {
                             <div className="flex flex-col items-center text-center">
                                 <img src={profile?.avatar || "/logos/AvatarIcon.png"} alt="Profile" className="w-24 h-24 rounded-full border mb-4" />
                                 <h2 className="text-xl font-semibold">{profile?.name || user.email}</h2>
-                                <p className="text-slate-500">{profile?.role || "Employee"}</p>
+                                <p className="text-slate-500">{profile?.primary_job_role || "No primary role set"}</p>
 
                                 <div className="flex gap-3 mt-4">
                                     <button className="px-4 py-2 rounded-xl border flex items-center gap-2 text-sm">
