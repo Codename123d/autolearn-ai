@@ -76,11 +76,37 @@ export default async function DashboardPage() {
 
                             <Card title="Upload Job Document">
                                 <p className="text-sm text-gray-500 mb-4">
-                                    Drag and drop or browse
+                                    Upload a document (PDF, DOCX, TXT) to extract tasks automitically.
                                 </p>
-                                <button className="px-4 py-2 bg-indigo-500 text-white rounded-lg">
-                                    Extract Tasks
-                                </button>
+
+                                {/* Hidden file input */}
+                                <input title="Upload Document" type="file" accept=".pdf,.docx,.txt" id="fileUpload" className="hidden" onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+
+                                    console.log("Selected file:", file);
+
+                                    const formData = new FormData();
+                                    formData.append("file", file);
+
+                                    try {
+                                        const res = await fetch("/api/upload", {
+                                            method: "POST",
+                                            body: formData,
+                                        });
+
+                                        const data = await res.json();
+                                        console.log("Server response:", data);
+                                    } catch (err) {
+                                        console.error("Upload error:", err);
+                                    }
+                                }} 
+                            />
+
+                                {/* Triger button */}
+                                <label htmlFor="fileUpload" className="inline-block px-4 py-2 bg-indigo-500 text-white rounded-lg cursor-pointer hover:bg-indigo-600">
+                                    Browse File
+                                </label>
                             </Card>
 
                             <Card title="Quick Stats">

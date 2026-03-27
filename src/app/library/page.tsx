@@ -2,13 +2,14 @@
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import Link from "next/link";
 
 export default async function LibraryPage() {
     const supabase = await createSupabaseServer();
 
-    const { data: lessons, error } = await supabase
-        .from("lessons")
-        .select("*")
+    const { data: plans, error } = await supabase
+        .from("learning_plans")
+        .select("id, title, created_at, status, lessons(title, is_gdpr)")
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -44,9 +45,9 @@ export default async function LibraryPage() {
 
                         {/* Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {lessons?.length ? (
-                                lessons.map((lesson) => (
-                                    <LibraryCard key={lesson.id} lesson={lesson} />
+                            {plans?.length ? (
+                                plans.map((plan) => (
+                                    <LibraryCard key={plan.id} plan={plan} />
                                 ))
                             ) : (
                                 <EmptyState />
@@ -62,7 +63,9 @@ export default async function LibraryPage() {
 /*--------------------------------------------------------*/
 /* Components */
 /*--------------------------------------------------------*/
-function LibraryCard({ lesson }: { lesson: any }) {
+function LibraryCard({ plan }: { plan: any }) {
+    const lesson = plan.lessons?.[0];
+
     return (
         <div className="bg-white rounded-2xl shadow p-6 flex gap-4">
 
@@ -73,19 +76,43 @@ function LibraryCard({ lesson }: { lesson: any }) {
 
             {/* Content */}
             <div className="flex-1">
-                <span className="inline-block mb-2 text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 font-medium">
-                    {lesson.title}
-                </span>
+                <h3 className="font-semibold text-lg">
+                    {plan.title}
+                </h3>
 
-                <h3 className="font-semibold">{lesson.lesson_title}</h3>
-                <p className="text-sm text-slate-500 mb-4">
-                    {lesson.task_goal}
+                {/* Lesson Title */}
+                <p className="text-sm text-slate-500 mt-1">
+                    {lesson?.title}
                 </p>
 
-                <div className="flex gap-3">
-                    <button className="px-4 py-2 rounded-lg border text-sm hover:bg-slate-100">
-                        Review
-                    </button>
+                
+                {/* Status + GDPR */}
+                <div className="flex items-center gap-2 mt-3">
+                    {lesson?.is_gdpr && (
+                        <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
+                            GDPR
+                        </span>    
+                    )}
+
+                    <span className={`text-xs px-2 py-1 rounded ${
+                        plan.status === "generated"
+                            ? "bg-green-100 text-green-700"
+                            : plan.status === "generating"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-gray-100 text-gray-600"
+                    }`}>
+                        {plan.status}
+                    </span>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-3 mt-4">
+                    <Link href={`/learning-plans/${plan.id}`}>
+                        <button className="px-4 py-2 rounded-lg border text-sm hover:bg-slate-100">
+                            Review
+                        </button>
+                    </Link>
+
                     <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
                         Ask for More Info
                     </button>

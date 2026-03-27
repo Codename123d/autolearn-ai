@@ -12,8 +12,10 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.1",
     "lucide-react": "^0.562.0",
+    "mammoth": "^1.12.0",
     "next": "16.1.4",
     "openai": "^6.16.0",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
