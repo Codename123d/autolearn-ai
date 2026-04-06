@@ -5,8 +5,9 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import Image from "next/image";
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import UploadElement from "@/components/UploadElement";
 
 export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: string; defaultJobRole: string; }) {
     const [jobRole, setJobRole] = useState(defaultJobRole);
@@ -16,6 +17,8 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
     const [skillLevel, setSkillLevel] = useState("");
     const [loading, setLoading] = useState(false);
     const [seniority, setSeniority] = useState("");
+    const searchParams = useSearchParams();
+    const docId = searchParams.get("docId");
     const router = useRouter();
     const generationRef = useRef(false);
 
@@ -48,14 +51,21 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
 
             router.push(`/learning-plans`);
 
-
-
         } catch (err: any) {
             alert(err.message);
         } finally {
             generationRef.current = false; // release lock
             setLoading(false);
         }
+    }
+
+    function handleParsedData(data: any) {
+        if (data.job_role) setJobRole(data.job_role);
+        if (data.seniority_level) setSeniority(data.seniority_level);
+        if (data.industry) setIndustry(data.industry);
+        if (data.tasks) setTasks(data.tasks.join("\n"));
+        if (data.goals) setGoals(data.goals.join("\n"));
+        if (data.skill_level) setSkillLevel(data.skill_level);
     }
 
     useEffect(() => {
@@ -74,6 +84,69 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
 
         checkActivePlan();
     }, [router]);
+
+    useEffect(() => {
+        if (!docId) return;
+
+        async function loadDocument() {
+            try {
+                const res = await fetch(`/api/get-document?docId=${docId}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Failed to load document");
+                }
+
+                if (data?.final_text?.job_role) {
+                    setJobRole(data.final_text.job_role);
+                }
+
+                if (data?.final_text?.seniority_level) {
+                    setSeniority(data.final_text.seniority_level);
+                }
+
+                if (data?.final_text?.industry) {
+                    setIndustry(data.final_text.industry);
+                }
+
+                if (data?.final_text?.tasks) {
+                    setTasks(data.final_text.tasks.join("\n"));
+                }
+
+                if (data?.final_text?.goals) {
+                    setGoals(data.final_text.goals.join("\n"));
+                }
+
+                if (data?.final_text?.skill_level) {
+                    setSkillLevel(data.final_text.skill_level);
+                }
+
+            } catch (err) {
+                console.error("Error loading document:", err);
+            }
+        }
+
+        if (docId && !tasks){
+            loadDocument();
+        }
+    }, [docId]);
+
+    useEffect(() => {
+        async function loadSkillLevel() {
+            try {
+                const res = await fetch("/api/quiz/latest");
+                const data = await res.json();
+
+                if (data?.inferred_level) {
+                    setSkillLevel(data.inferred_level);
+                }
+            } catch (err) {
+                console.error("Failed to load skill level:", err);
+            }
+        }
+
+        loadSkillLevel();
+    }, []);
 
     const isDisabled = 
         !jobRole || !seniority || !industry || !tasks || !goals || !skillLevel || loading;
@@ -111,6 +184,8 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                                 <h2 className="text-lg font-semibold mb-6 text-slate-800">
                                     Job Information
                                 </h2>
+
+                                <UploadElement onParsed={handleParsedData} />
 
                                 {/* Grid Form */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -169,7 +244,9 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
 
                                     {/* Skill Level */}
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-sm font-medium text-slate-700">Skill Level</label>
+                                        <label className="text-sm font-medium text-slate-700">
+                                            Skill Level {skillLevel && "(Auto-detected)"}
+                                        </label>
                                         <select title="Skill Level" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)}>
                                             <option value="">Select Skill Level</option>
                                             <option value="beginner">Beginner</option>
@@ -182,7 +259,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                                 {/* Button */}
                                 <div className="flex justify-center mt-10">
                                     <button onClick={handleGenerate} disabled={isDisabled} className="px-10 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                        {loading ? "Generating..." : "Generate Learning Plan"}
+                                        {loading ? "Generating your personalised AI learning plan..." : "Generate Learning Plan"}
                                     </button>
                                 </div>
                             </div>

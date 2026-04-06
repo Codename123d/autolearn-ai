@@ -61,6 +61,16 @@ export async function POST(req: Request) {
             );
         }
 
+        const { data: quizResult } = await supabase
+            .from("skill_quiz_results")
+            .select("inferred_level")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        
+        const finalSkilllevel = quizResult?.inferred_level || skillLevel?.toLowerCase() || "beginner";
+
         const { data: intake, error: intakeError } = await supabase
             .from("job_intake_forms")
             .insert({
@@ -70,7 +80,7 @@ export async function POST(req: Request) {
                 industry,
                 tasks,
                 goals,
-                skill_level: skillLevel?.toLowerCase() ?? "beginner",
+                skill_level: finalSkilllevel,
             })
             .select()
             .single();
@@ -86,7 +96,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const failPlans = async (message: string, createdPlanId: string[] = []) => {
+        const failPlans = async (message: string, createdPlanIds: string[] = []) => {
 
             if (createdPlanIds.length > 0) {
                 await supabase
@@ -193,6 +203,11 @@ export async function POST(req: Request) {
             - data minimisation
             - legal responsibility
             - warning against uploading sensitive documents
+        
+        - Adapt lesson difficulty based on Technical Skill Level:
+            - Beginner: explain step-by-step, simple language, no assumptions
+            - Intermediate: include tools, workflows, moderate detail
+            - Advanced: focus on optimisation, automation strategies, integrations
 
         Output JSON Structure:
 
@@ -237,7 +252,7 @@ export async function POST(req: Request) {
         Job Role: ${jobRole}
         Seniority Level: ${seniority}
         Industry: ${industry}
-        Technical Skill Level: ${skillLevel}
+        Technical Skill Level: ${finalSkilllevel}
 
         Tasks:
         ${taskArray.map((t: string, i: number) => `${i + 1}. ${t}`).join("\n")}

@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import AskAIBox from "@/components/AskAIBox";
 
 export default async function LearningPlanPage({ params }: { params: Promise<{ id: string }>; }) {
     const cookieStore = await cookies();
@@ -39,14 +40,30 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
 
     const lesson = plan.lessons?.[0];
 
-    const { data: progress } = await supabase
-        .from("lesson_progress")
-        .select("lesson_id, completed, completed_at")
-        .eq("user_id", user.id)
-        .eq("lesson_id", lesson?.id);
+    // Get ALL lessons for THIS plan
+    const { data: lessons } = await supabase
+        .from("lessons")
+        .select("id")
+        .eq("learning_plan_id", id);
 
-    const isCompleted = progress?.[0]?.completed === true;
-    const progressPercent = isCompleted ? 100 : 0;
+    // Get progress for THIS user
+    const { data: progress }= await supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id);
+    
+    const isCompleted = progress?.some(
+        p => p.lesson_id === lesson?.id && p.completed
+    ); 
+    
+    // Count completed lessons inside THIS plan
+    const completedLessons  = lessons?.filter(lesson =>
+        progress?.some(p => p.lesson_id === lesson.id && p.completed)
+    ).length || 0;
+
+    const totalLessons = lessons?.length || 1;
+
+    const progressPercent = Math.round((completedLessons / totalLessons) * 100);
 
     const isGdpr = lesson?.is_gdpr;
     const incompleteGdpr = isGdpr && !isCompleted;
@@ -77,7 +94,7 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
                             {/* Overview Section */}
                             <section className="mb-8 rounded-lg border p-6">
                                 <h2 className="text-xl font-semibold">Learning Plan Overview</h2>
-                                <p className="mt-2 text-gray-600">{plan.description}</p>
+                                <p className="mt-2 text-gray-600">{plan.introduction}</p>
 
                                 <p className="mt-4 text-sm text-gray-500">
                                     Estimated duration: {plan.estimated_duration ?? "2-3 hours"} 
@@ -103,14 +120,14 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
                                 </div>
 
                                 <p className="mt-2 text-sm text-gray-600">
-                                    {isCompleted ? "Lesson completed" : "Lesson not completed"} ({progressPercent}%)
+                                    {completedLessons} of {totalLessons} lessons completed ({progressPercent}%)
                                 </p>
                             </section>
 
                             {/* */}
                             {incompleteGdpr && (
                                 <section className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                                    <p className="text-sm text-yellow-800">?
+                                    <p className="text-sm text-yellow-800">
                                         ⚠️ You have complete all GDPR lessons before this learning plan can be considered complete.
                                     </p>
                                 </section>
@@ -152,8 +169,26 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
                                                     )}
                                                 </div>
                                             </div>
+                                            
+                                            <div className="mt-3 text-gray-700 space-y-6">
+                                                {/* lesson content */}
+                                                <p>{lesson.content}</p>
+                                                
+                                                {/* Static Help */}
+                                                <div className="rounded-lg border bg-blue-50 p-4">
+                                                    <h4 className="text-sm font-semibold text-blue-800">
+                                                        Need more help?
+                                                    </h4>
 
-                                            <p className="mt-3 text-gray-700">{lesson.content}</p>
+                                                    <ul className="mt-2 text-sm text-blue-700 list-disc pl-5 space-y-1">
+                                                        <li>Break the task into smaller steps</li>
+                                                        <li>Check AI outputs carefully before using them</li>
+                                                        <li>Apply this to one real task in your job</li>
+                                                    </ul>
+                                                </div>
+
+                                                <AskAIBox lessonContent={lesson.content} />
+                                            </div>
 
                                             <div className="mt-4 rounded bg-gray-50 p-3 text-sm">
                                                 <strong>Reflection:</strong>

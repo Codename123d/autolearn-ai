@@ -1,16 +1,17 @@
 // src/app/library/page.tsx
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
-import { createSupabaseServer } from "@/lib/supabase/server";
 import Link from "next/link";
+import { requireUser } from "@/lib/auth/requireUser";
 
 export default async function LibraryPage() {
-    const supabase = await createSupabaseServer();
+    const { user, supabase } = await requireUser("/library");
 
     const { data: plans, error } = await supabase
         .from("learning_plans")
         .select("id, title, created_at, status, lessons(title, is_gdpr)")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .eq("user_id", user.id);
 
     if (error) {
         console.error(error);
@@ -63,8 +64,23 @@ export default async function LibraryPage() {
 /*--------------------------------------------------------*/
 /* Components */
 /*--------------------------------------------------------*/
-function LibraryCard({ plan }: { plan: any }) {
-    const lesson = plan.lessons?.[0];
+type Lesson = {
+    title: string;
+    is_gdpr: boolean;
+};
+
+type Plan = {
+    id: string;
+    title: string;
+    status: string | null;
+    lessons: Lesson[] | null;
+};
+
+function LibraryCard({ plan }: { plan: Plan }) {
+    const lessonCount = plan.lessons?.length || 0;
+    const firstLesson = plan.lessons?.[0];
+
+    const status = plan.status ?? "unknown";
 
     return (
         <div className="bg-white rounded-2xl shadow p-6 flex gap-4">
@@ -82,26 +98,26 @@ function LibraryCard({ plan }: { plan: any }) {
 
                 {/* Lesson Title */}
                 <p className="text-sm text-slate-500 mt-1">
-                    {lesson?.title}
+                    {firstLesson?.title ?? "Start your first lesson"} ({lessonCount} lesson{lessonCount !== 1 ? "s" : ""})
                 </p>
 
                 
                 {/* Status + GDPR */}
                 <div className="flex items-center gap-2 mt-3">
-                    {lesson?.is_gdpr && (
+                    {plan.lessons?.some(l => l.is_gdpr) && (
                         <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
                             GDPR
                         </span>    
                     )}
 
                     <span className={`text-xs px-2 py-1 rounded ${
-                        plan.status === "generated"
+                        status === "generated"
                             ? "bg-green-100 text-green-700"
-                            : plan.status === "generating"
+                            : status === "generating"
                             ? "bg-yellow-100 text-yellow-700"
                             : "bg-gray-100 text-gray-600"
                     }`}>
-                        {plan.status}
+                        {status}
                     </span>
                 </div>
                 
@@ -113,9 +129,11 @@ function LibraryCard({ plan }: { plan: any }) {
                         </button>
                     </Link>
 
-                    <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
-                        Ask for More Info
-                    </button>
+                    <Link href={`/learning-plans/${plan.id}#ask-ai`}>
+                        <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
+                            Ask AI
+                        </button>
+                    </Link>
                 </div>
             </div>
         </div>
@@ -131,6 +149,12 @@ function EmptyState() {
             <p className="text-sm">
                 Generate your first lesson plan to see it appear here.
             </p>
+
+            <Link href="/create-plan">
+                <button className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg">
+                    Create your first plan
+                </button>
+            </Link>
         </div>
     );
 }

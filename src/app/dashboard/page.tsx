@@ -2,17 +2,54 @@
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { requireUser } from "@/lib/auth/requireUser";
+import UploadElement from "@/components/UploadElement";
 
 export default async function DashboardPage() {
     const { user, supabase } = await requireUser("/dashboard");
 
     // Fetch user plans
     const { data: plans } = await supabase
-        .from("plans")
-        .select("*")
+        .from("learning_plans")
+        .select(`id, title, created_at, status, lessons (id)`)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(3);
+
+    let allLessons: { id: string; learning_plan_id: string; lesson_order: number; title: string }[] = [];
+    
+    // Get ALL lessons for these plans
+    if (plans && plans.length > 0) {
+        const { data } = await supabase
+            .from("lessons")
+            .select("id, learning_plan_id, lesson_order, title")
+            .in("learning_plan_id", plans.map(p => p.id))
+            .order("lesson_order", { ascending: true });
+
+        allLessons = data || [];
+    }
+    
+    // Get progress
+    const { data: allProgress } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id);
+    
+    // Calculate stats
+    const totalLessons = allLessons?.length || 0;
+
+    const completedLessons = allLessons?.filter(lesson =>
+        allProgress?.some(p => p.lesson_id === lesson.id && p.completed)
+    ).length || 0;
+
+    const nextLesson = allLessons.find(lesson => {
+           if (!allProgress) return true;
+            
+            return !allProgress.some(
+                p => p.lesson_id === lesson.id && p.completed
+            );
+    });
+
+    const safePlans = plans ?? [];
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 p-6">
@@ -31,21 +68,48 @@ export default async function DashboardPage() {
                     <main className="flex-1 p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 bg-slate-50">
                         {/* Left column */}
                         <section className="space-y-6">
-                            <button className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 transition text-white rounded-2xl text-lg font-medium">
+                            <a href="/create-plan" className="block w-full py-4 bg-indigo-500 hover:bg-indigo-600 transition text-white rounded-2xl text-lg font-medium text-center">
                                 + Create New Plan
-                            </button>
+                            </a>
+
+                            <h3 className="text-sm text-gray-500">
+                                Continue where you left off or review recent plans.
+                            </h3>
 
                             <Card title="Recent Plans">
                                 {plans?.length ? (
-                                    plans.map((plan) => (
-                                        <PlanItem key={plan.id} title={plan.title} meta={`${plan.duration} min`} />
-                                    ))
+                                    safePlans.map((plan) => {
+                                        const planLessons = allLessons.filter(l => l.learning_plan_id == plan.id);
+
+                                        const completed = planLessons.filter(l => 
+                                            allProgress?.some(p => p.lesson_id === l.id && p.completed)
+                                        ).length;
+
+                                        const total = planLessons.length;
+
+                                        return (
+                                            <PlanItem key={plan.id} id={plan.id} title={plan.title} meta={`${completed}/${total} completed`} />
+                                        );
+                                    })
                                 ) : (
                                     <p className="text-sm text-gray-500">
                                         No plans yet
                                     </p>
                                 )}
                             </Card>
+                            
+                            {nextLesson && (
+                                <Card title="Resume Learning">
+                                    <p className="text-sm text-gray-500 mb-2">
+                                        Pick up where you left off
+                                    </p>
+
+                                    <a href={`/learning-plans/${nextLesson.learning_plan_id}`} className="block bg-indigo-500 text-white text-center py-3 rounded-lg hover:bg-indigo-600 transition">
+                                        Resume: {nextLesson.title} ({completedLessons} /{totalLessons}) →
+                                    </a>
+                                </Card>
+                            )}
+
                         </section>
 
                         {/* Middle column */}
@@ -70,50 +134,19 @@ export default async function DashboardPage() {
                         <section className="space-y-6">
                             <Card title="AI Assistant">
                                 <p className="text-sm text-gray-600">
-                                    How can I automate a sceduling meetings?
+                                    How can I automate scheduling meetings?
                                 </p>
                             </Card>
 
                             <Card title="Upload Job Document">
-                                <p className="text-sm text-gray-500 mb-4">
-                                    Upload a document (PDF, DOCX, TXT) to extract tasks automitically.
-                                </p>
-
-                                {/* Hidden file input */}
-                                <input title="Upload Document" type="file" accept=".pdf,.docx,.txt" id="fileUpload" className="hidden" onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-
-                                    console.log("Selected file:", file);
-
-                                    const formData = new FormData();
-                                    formData.append("file", file);
-
-                                    try {
-                                        const res = await fetch("/api/upload", {
-                                            method: "POST",
-                                            body: formData,
-                                        });
-
-                                        const data = await res.json();
-                                        console.log("Server response:", data);
-                                    } catch (err) {
-                                        console.error("Upload error:", err);
-                                    }
-                                }} 
-                            />
-
-                                {/* Triger button */}
-                                <label htmlFor="fileUpload" className="inline-block px-4 py-2 bg-indigo-500 text-white rounded-lg cursor-pointer hover:bg-indigo-600">
-                                    Browse File
-                                </label>
+                                <UploadElement />
                             </Card>
 
                             <Card title="Quick Stats">
                                 <div className="grid grid-cols-3 gap-4 text-center">
-                                    <Stat label="Plans" value={plans?.length} />
-                                    <Stat label="Complete" value={plans?.length} />
-                                    <Stat label="Time" value={plans?.length} />
+                                    <Stat label="Plans" value={plans?.length || 0} />
+                                    <Stat label="Lessons Done" value={completedLessons} />
+                                    <Stat label="Total Lessons" value={totalLessons} />
                                 </div>
                             </Card>
                         </section>
@@ -140,12 +173,12 @@ function Card({ title, children, badge }: any) {
     );
 }
 
-function PlanItem({ title, meta }: any) {
+function PlanItem({ id, title, meta }: any) {
     return (
-        <div className="flex justify-between items-center py-3 border-b last:border-none">
+        <a href={`/learning-plans/${id}`} className="flex justify-between items-center py-3 border-b last:border-none hover:bg-gray-50 px-2 rounded">
             <span className="text-sm">{title}</span>
             <span className="text-sm text-gray-500">{meta}</span>
-        </div>
+        </a>
     );
 }
 

@@ -1,5 +1,4 @@
 // src/app/learning-plans/page.tsx
-
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -39,6 +38,33 @@ export default async function LearningPlanDashboard() {
 
     if (!plans || plans.length === 0) return <p className="p-10">No learning plans found.</p>;
 
+    // Get ALL lessons for these plans
+    const { data: allLessons } = await supabase
+        .from("lessons")
+        .select("id, learning_plan_id")
+        .in("learning_plan_id", plans.map(p => p.id));
+    
+    const { data: allProgress } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id);
+    
+    const totalLessons = allLessons?.length || 0;
+
+    const completedLessons = allLessons?.filter(lesson =>
+        allProgress?.some(p => p.lesson_id === lesson.id && p.completed)
+    ).length || 0;
+
+    const globalProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    // Find FIRST incomplete lesson
+    const firstIncomplete = allLessons?.find(lesson =>
+        !allProgress?.some(p => p.lesson_id === lesson.id && p.completed)
+    );
+
+    // Get its plan id
+    const resumePlanId = firstIncomplete?.learning_plan_id;
+
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
             <div className="mx-auto max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
@@ -57,6 +83,36 @@ export default async function LearningPlanDashboard() {
                             <h1 className="text-3xl font-bold mb-6">
                                 Your Generated Learning Plans    
                             </h1>
+
+                            <section className="mb-8 rounded-lg border p-6 bg-white shadow">
+                                <h2 className="text-lg font-semibold">Overall Progress</h2>
+
+                                {resumePlanId && (
+                                    <section className="mb-6 rounded-lg border p-6 bg-indigo-50 shadow flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-indigo-800">
+                                                Resume Learning
+                                            </h2>
+                                            <p className="text-sm text-indigo-600">
+                                                Continue where you left off.
+                                            </p>
+                                        </div>
+
+                                        <Link href={`/learning-plans/${resumePlanId}`} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                            Resume
+                                        </Link>
+                                    </section>
+                                )}
+
+                                <div className="mt-3 h-3 w-full rounded bg-gray-200">
+                                    <div className="h-3 rounded bg-indigo-600" style={{ width: `${globalProgress}%`}} />
+                                </div>
+
+                                <p className="mt-2 text-sm text-gray-600">
+                                    {completedLessons} of {totalLessons} lessons completed ({globalProgress}%)
+                                </p>
+                            </section>
+
                             {!plans || plans.length === 0 ? (
                                 <p className="text-gray-600">No learning plans found.</p>    
                             ) : (

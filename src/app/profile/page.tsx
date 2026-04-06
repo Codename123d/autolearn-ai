@@ -1,12 +1,36 @@
 // src/app/profile/page.tsx
+import React, { cloneElement, JSX } from "react";
 import { Mail, MapPin, Calendar, Settings, Edit, CheckCircle, Clock, Zap, Star, Brain } from "lucide-react";
 import { requireUser } from "@/lib/auth/requireUser";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { syncUserProgress } from "@/lib/actions/progress";
 
 export default async function ProfilePage() {
+
+    type Stat = {
+        label: string;
+        value: string;
+        icon: string;
+    };
+
+    type AchievementType = {
+        title: string;
+        description: string;
+        created_at: string;
+        icon: string;
+    };
+
+    type SkillType = {
+        label: string;
+        level: string;
+        percentage: number;
+    };
+
     // Protect page & get supabase + user
     const { user, supabase } = await requireUser("/profile");
+
+    await syncUserProgress(user.id);
 
     // Fetch profile data from Supabase
     const { data: profile } = await supabase
@@ -15,21 +39,84 @@ export default async function ProfilePage() {
         .eq("id", user.id)
         .single();
 
-    // Fetch user stats/achievements if stored
-    const { data: stats } = await supabase
-        .from("user_stats")
-        .select("*")
+    const { data: achievementsData } = await supabase
+        .from("user_achievements")
+        .select(`
+            unlocked_at,
+            achievement_definitions (
+                id,
+                title,
+                description,
+                icon
+            )
+        `)
         .eq("user_id", user.id);
 
-    const { data: achievements } = await supabase
-        .from("achievements")
-        .select("*")
-        .eq("user_id", user.id);
+    const achievements = achievementsData ?? [];
+    
+    // Fetch updated lesson count
+    const { count: lessonsCompleted } = await supabase
+        .from("lesson_progress")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("completed", true);
+    
+    const lessonsCompletedCount = lessonsCompleted ?? 0;
 
-    const { data: skills } = await supabase
+    // Fetch updated skill data (for timeSaved calculation) 
+    const { data: skillsData } = await supabase
         .from("skills")
         .select("*")
         .eq("user_id", user.id);
+
+    const skills = skillsData ?? [];
+
+    // Compute timeSaved and completionRate (or fetch from user_stats if you store them)
+    const timeSavedStat = await supabase
+        .from("user_stats")
+        .select("value")
+        .eq("user_id", user.id)
+        .eq("label", "time_saved")
+        .single();
+    
+    const timeSaved = timeSavedStat?.data?.value || "0 mins";
+
+    const { count: totalLessons } = await supabase
+        .from("lesson_progress")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+    const completionRate = totalLessons
+        ? `${Math.round((lessonsCompletedCount / totalLessons) * 100)}%`
+        : "0%";
+    
+    type IconKey = "check" | "clock" | "zap" | "star" | "brain";
+
+    const iconMap: Record<IconKey, JSX.Element> = {
+        check: <CheckCircle />,
+        clock: <Clock />,
+        brain: <Brain />,
+        star: <Star />,
+        zap: <Zap />
+    };
+
+    const { data: allAchievements } = await supabase
+        .from("achievement_definitions")
+        .select("*");
+
+    const achievementsWithStatus = allAchievements?.map(def =>{
+        const unlockedData = achievements.find(
+            a => a.achievement_definitions?.[0]?.id === def.id
+        );
+
+        return { ...def, unlocked: !!unlockedData, unlocked_at: unlockedData?.unlocked_at || null };
+    });
+
+    achievementsWithStatus?.sort((a, b) => {
+        if (!a.unlocked_at) return 1;
+        if (!b.unlocked_at) return -1;
+        return new Date(b.unlocked_at).getTime() - new Date(a.unlocked_at).getTime();
+    });
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
@@ -82,52 +169,51 @@ export default async function ProfilePage() {
                             <div className="bg-white rounded-2xl shadow p-6">
                                 <h3 className="text-lg font-semibold mb-4">Productivity Stats</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    {stats?.map(stat => (
-                                        <StatCard
-                                            key={stat.label}
-                                            icon={
-                                                stat.icon === "tasks" ? <CheckCircle /> :
-                                                stat.icon === "rate" ? <Zap /> :
-                                                <Clock />
-                                            }
-                                            label={stat.label}
-                                            value={stat.value}
-                                        />
-                                    ))}
+                                    <StatCard icon={<CheckCircle />} label="Lessons Completed" value={lessonsCompletedCount} />
+                                    <StatCard icon={<Clock />} label="Time Saved" value={timeSaved} />
+                                    <StatCard icon={<Zap />} label="Completion Rate" value={completionRate} />
                                 </div>
-                            </div>
+                            </div>                   
 
                             {/* Achivements */}
                             <div className="bg-white rounded-2xl shadow p-6">
                                 <h3 className="text-lg font-semibold mb-4">Achievements</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {achievements?.map(a => (
-                                        <Achievement
-                                            key={a.title}
-                                            icon={
-                                                a.icon === "check" ? <CheckCircle /> :
-                                                a.icon === "clock" ? <Clock /> :
-                                                a.icon === "brain" ? <Brain /> :
-                                                <Star />
+                                    {achievementsWithStatus?.map((a) => {
+                                        const iconKey = (a.icon || "star").toLowerCase() as IconKey;
+
+                                        const baseIcon = iconMap[iconKey] ?? iconMap["star"];
+
+                                        return (
+                                            <Achievement key={a.title} icon={
+                                                cloneElement(
+                                                    baseIcon,
+                                                    {
+                                                        className: a.unlocked ? "text-yellow-400" : "text-gray-300"
+                                                    }
+                                                )
                                             }
-                                            title={a.title}
-                                            desc={a.desc}
-                                        />
-                                    ))}
+                                            title={a.title} desc={a.unlocked ? a.description : "Locked"} />
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                             {/* AI Skills */}
                             <div className="bg-white rounded-2xl shadow p-6">
                                 <h3 className="text-lg font-semibold mb-4">AI Skills</h3>
-                                {skills?.map(skill => (
-                                    <Skill
-                                        key={skill.label}
-                                        label={skill.label}
-                                        level={skill.level}
-                                        percentage={skill.percentage}
-                                    />
-                                ))}
+                                {skills?.length ? (
+                                    skills?.map((skill: SkillType) => (
+                                        <Skill
+                                            key={`${skill.label}-${skill.percentage}`}
+                                            label={skill.label}
+                                            level={skill.level}
+                                            percentage={skill.percentage}
+                                        />
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-slate-500">Complete lessons to build your AI skill profile</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -140,7 +226,7 @@ export default async function ProfilePage() {
 function StatCard({ icon, label, value }: any) {
     return (
         <div className="rounded-xl border p-4 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
                 {icon}
             </div>
             <p className="text-sm text-slate-500">{label}</p>

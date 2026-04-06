@@ -22,7 +22,7 @@ export default function Sidebar() {
                 <SidebarLink href="/dashboard" icon={<LayoutGrid size={18} />} label="Dashboard" pathname={pathname} />
                 <SidebarLink href="/create-plan" icon={<PlusSquare size={18} />} label="Create Plan" pathname={pathname} />
                 <SidebarLink href="/library" icon={<BookOpen size={18} />} label="Library" pathname={pathname} />
-                <SidebarLink href="/quizzes" icon={<ClipboardList size={18} />} label="Quizzes" pathname={pathname} />
+                <SidebarLink href="/quiz" icon={<ClipboardList size={18} />} label="quiz" pathname={pathname} />
                 <SidebarLink href="/analytics" icon={<BarChart2 size={18} />} label="Analytics" pathname={pathname} />
             </nav>
             <div className="px-4 py-4 border-t border-white/10">
