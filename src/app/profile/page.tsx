@@ -1,10 +1,10 @@
 // src/app/profile/page.tsx
-import React, { cloneElement, JSX } from "react";
 import { Mail, MapPin, Calendar, Settings, Edit, CheckCircle, Clock, Zap, Star, Brain } from "lucide-react";
 import { requireUser } from "@/lib/auth/requireUser";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { syncUserProgress } from "@/lib/actions/progress";
+import Link from "next/link";
 
 export default async function ProfilePage() {
 
@@ -14,10 +14,10 @@ export default async function ProfilePage() {
         icon: string;
     };
 
-    type AchievementType = {
+    type AchievementDef = {
+        id: string;
         title: string;
         description: string;
-        created_at: string;
         icon: string;
     };
 
@@ -92,25 +92,29 @@ export default async function ProfilePage() {
     
     type IconKey = "check" | "clock" | "zap" | "star" | "brain";
 
-    const iconMap: Record<IconKey, JSX.Element> = {
-        check: <CheckCircle />,
-        clock: <Clock />,
-        brain: <Brain />,
-        star: <Star />,
-        zap: <Zap />
+    const iconMap: Record<IconKey, any> = {
+        check: CheckCircle,
+        clock:  Clock,
+        brain: Brain,
+        star: Star,
+        zap: Zap
     };
 
     const { data: allAchievements } = await supabase
         .from("achievement_definitions")
         .select("*");
 
-    const achievementsWithStatus = allAchievements?.map(def =>{
-        const unlockedData = achievements.find(
-            a => a.achievement_definitions?.[0]?.id === def.id
-        );
+    const achievementsWithStatus = allAchievements?.map(def => {
+        const unlockedData = achievements.find(a => {
+            const achievementDef = a.achievement_definitions as unknown as AchievementDef;
+            console.log("TYPE CHECK:", Array.isArray(a.achievement_definitions));
+            console.log(a.achievement_definitions);
+            return achievementDef?.id === def.id;
+        });
 
         return { ...def, unlocked: !!unlockedData, unlocked_at: unlockedData?.unlocked_at || null };
     });
+    console.log(achievementsData);
 
     achievementsWithStatus?.sort((a, b) => {
         if (!a.unlocked_at) return 1;
@@ -141,9 +145,9 @@ export default async function ProfilePage() {
                                 <p className="text-slate-500">{profile?.primary_job_role || "No primary role set"}</p>
 
                                 <div className="flex gap-3 mt-4">
-                                    <button className="px-4 py-2 rounded-xl border flex items-center gap-2 text-sm">
+                                    <Link href="/profile/edit" className="px-4 py-2 rounded-xl border flex items-center gap-2 text-sm hover:bg-indigo-50 transition">
                                         <Edit size={16} /> Edit Profile
-                                    </button>
+                                    </Link>
                                     <button className="px-4 py-2 rounded-xl border flex items-center gap-2 text-sm">
                                         <Settings size={16} /> Settings
                                     </button>
@@ -155,7 +159,7 @@ export default async function ProfilePage() {
                                     <Mail size={16} /> {profile?.email || user.email}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Calendar size={16} /> Member since {profile?.created_at || "N/A"}
+                                    <Calendar size={16} /> Member since: {new Date(profile?.created_at).toLocaleDateString() || "N/A"}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <MapPin size={16} /> {profile?.location || "Unknown"}
@@ -182,16 +186,11 @@ export default async function ProfilePage() {
                                     {achievementsWithStatus?.map((a) => {
                                         const iconKey = (a.icon || "star").toLowerCase() as IconKey;
 
-                                        const baseIcon = iconMap[iconKey] ?? iconMap["star"];
+                                        const IconComponent = iconMap[iconKey] ?? iconMap["star"];
 
                                         return (
                                             <Achievement key={a.title} icon={
-                                                cloneElement(
-                                                    baseIcon,
-                                                    {
-                                                        className: a.unlocked ? "text-yellow-400" : "text-gray-300"
-                                                    }
-                                                )
+                                                <IconComponent color={a.unlocked ? "#facc15" : "#d1d5db"} className="w-5 h-5" /> // yellow-400 / gray-300
                                             }
                                             title={a.title} desc={a.unlocked ? a.description : "Locked"} />
                                         );
@@ -226,7 +225,7 @@ export default async function ProfilePage() {
 function StatCard({ icon, label, value }: any) {
     return (
         <div className="rounded-xl border p-4 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
                 {icon}
             </div>
             <p className="text-sm text-slate-500">{label}</p>
@@ -238,7 +237,7 @@ function StatCard({ icon, label, value }: any) {
 function Achievement({ icon, title, desc }: any) {
     return (
         <div className="rounded-xl border p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
                 {icon}
             </div>
             <div>
