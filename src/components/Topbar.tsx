@@ -3,19 +3,31 @@
 
 import { Search, HelpCircle, User, X, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 type TopbarProps = {
     title: string;
 };
 
 export default function Topbar({ title }: TopbarProps) {
+
+    const supabase = useMemo(() => createClient(), []); // create client once
+
+    type SearchResult = {
+        id: string; // plan id (for plans)
+        title: string;
+        type: "plan" | "lesson";
+        lessonId?: string; // only for lessons
+        planId?: string; // only for lessons
+    };
+
     const router = useRouter();
-    const [searchOpen, setSearchOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
+    const [results, setResults] = useState<SearchResult[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +42,30 @@ export default function Topbar({ title }: TopbarProps) {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (!query) {
+            setResults([]);
+            return;
+        }
+
+        setLoading(true);
+
+        const delay = setTimeout(async () => {
+            try{
+                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                setResults(data.results);
+            } catch (err) {
+                console.error("Search error:", err);
+                setResults([]);
+            } finally {
+                setLoading(false);
+            }
+        },  300);
+        
+        return () => clearTimeout(delay);
+    }, [query]);
 
     async function handleLogout() {
         setMenuOpen(false);
@@ -47,20 +83,72 @@ export default function Topbar({ title }: TopbarProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-4 relative">
-
                 {/* Search */}
-                {searchOpen ? (
+                <div className="relative">
                     <div className="flex items-center bg-white/20 rounded-lg px-3 py-2 gap-2">
-                        <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." className="bg-transparent outline-none placeholder-white/70 text-sm w-40"/>    
-                        <button title="Close search" onClick={() => setSearchOpen(false)}>
-                            <X className="w-4 h-4" />
-                        </button>
+                        <Search className="w-4 h-4" />
+
+                        <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => {
+                            if (e.key === "Enter" && query.trim()) {
+                                router.push(`/search?q=${encodeURIComponent(query)}`);
+                                setQuery("");
+                                setResults([]);
+                            }
+
+                            if (e.key === "Escape") {
+                                setQuery("");
+                                setResults([]);
+                            }
+                        }}
+                        placeholder="Search..."
+                        className="bg-transparent outline-none placeholder-white/70 text-sm w-40" />
+
+                        {query && (
+                            <button title="Clear Search" onClick={() => {
+                                setQuery("");
+                                setResults([]);
+                            }}>
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
-                ) : (
-                    <button title="Open search" onClick={() => setSearchOpen(true)} className="hover:bg-white/20 p-2 rounded-lg transition">
-                        <Search className="w-5 h-5" />
-                    </button>
-                )}
+
+                    {/* loading */}
+                    {loading && (
+                        <div className="absolute top-full mt-2 w-60 bg-white text-gray-500 rounded-lg shadow p-3 text-sm">
+                            Searching...
+                        </div>   
+                    )}
+                    
+                    {/* Results */}
+                    {!loading && results.length > 0 && (
+                        <div className="absolute top-full mt-2 w-60 bg-white text-black rounded-lg shadow z-50">
+                            {results.map((item) => (
+                                <Link key={item.id} href={
+                                    item.type === "plan"
+                                        ? `/learning-plans/${item.id}`
+                                        : `/learning-plans/${item.planId}?lesson=${item.lessonId}`
+                                } className="block px-3 py-2 hover:bg-gray-100" onClick={() => {
+                                    setQuery("");
+                                    setResults([]);
+                                }}>
+                                    <span className="font-medium">{item.title}</span>
+
+                                    <div className="text-xs text-gray-500">
+                                        {item.type === "plan" ? "Learning Plan" : "Lesson"}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* No results */}
+                    {!loading && query && results.length === 0 && (
+                        <div className="absolute top-full mt-2 w-60 bg-white text-gray-500 rounded-lg shadow p-3 text-sm">
+                            No results found.
+                        </div>   
+                    )}
+                </div>
                 
                 {/* Divider */}
                 <div className="h-6 w-px bg-white/30" />

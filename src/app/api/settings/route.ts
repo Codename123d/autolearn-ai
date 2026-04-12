@@ -18,7 +18,7 @@ export async function GET() {
         .from("settings")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
     if (error && error.code !== "PGRST116") {
         return NextResponse.json({ error: "Failed to load settings" }, { status: 500 });
@@ -59,6 +59,14 @@ export async function PUT(req: Request) {
 
     const { darkMode, emailNotifications, dataConsent } = body;
 
+    if (
+        typeof darkMode !== "boolean" ||
+        typeof emailNotifications !== "boolean" ||
+        typeof dataConsent !== "boolean"
+    ) {
+        return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    }
+
     const { error } = await supabase
         .from("settings")
         .upsert({
@@ -66,6 +74,7 @@ export async function PUT(req: Request) {
             dark_mode: darkMode,
             email_notifications: emailNotifications,
             data_consent: dataConsent,
+            consent_updated_at: new Date(),
         });
 
     if (error) {

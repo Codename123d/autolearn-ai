@@ -5,10 +5,30 @@ import { cookies } from "next/headers";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import AskAIBox from "@/components/AskAIBox";
+import ReactMarkdown from "react-markdown";
+import ScrollToLesson from "@/components/ScrollToLesson";
 
-export default async function LearningPlanPage({ params }: { params: Promise<{ id: string }>; }) {
+export default async function LearningPlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ lesson?: string }> }) {
+    
+    type Lesson = {
+        id: string;
+        title: string;
+        content: string;
+        is_gdpr: boolean;
+    };
+
+    type LearningPlan = {
+        id: string;
+        title: string;
+        introduction: string;
+        estimated_duration?: string;
+        final_recap: string;
+        lessons: Lesson[];
+    };
+
     const cookieStore = await cookies();
     const { id } = await params;
+    const { lesson: lessonIdFromQuery } = await searchParams;
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,13 +52,11 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
         .from("learning_plans")
         .select("*, lessons(*)")
         .eq("id", id)
-        .single();
+        .single<LearningPlan>();
 
     if (!plan) {
         return <p className="p-10">Learning plan not found.</p>;
     }
-
-    const lesson = plan.lessons?.[0];
 
     // Get ALL lessons for THIS plan
     const { data: lessons } = await supabase
@@ -52,10 +70,6 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
         .select("lesson_id, completed")
         .eq("user_id", user.id);
     
-    const isCompleted = progress?.some(
-        p => p.lesson_id === lesson?.id && p.completed
-    ); 
-    
     // Count completed lessons inside THIS plan
     const completedLessons  = lessons?.filter(lesson =>
         progress?.some(p => p.lesson_id === lesson.id && p.completed)
@@ -65,12 +79,16 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
 
     const progressPercent = Math.round((completedLessons / totalLessons) * 100);
 
-    const isGdpr = lesson?.is_gdpr;
-    const incompleteGdpr = isGdpr && !isCompleted;
+    const incompleteGdpr = plan.lessons?.some(lesson =>
+        lesson.is_gdpr &&
+        !progress?.some(p => p.lesson_id === lesson.id && p.completed)
+    );
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
             <div className="mx-auto max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+
+                <ScrollToLesson lessonId={lessonIdFromQuery} />
                 
                 {/* Sidebar */}
                 <Sidebar />
@@ -124,7 +142,7 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
                                 </p>
                             </section>
 
-                            {/* */}
+                            {/* Incomplete GDPR Section */}
                             {incompleteGdpr && (
                                 <section className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                                     <p className="text-sm text-yellow-800">
@@ -136,43 +154,52 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
                             {/* Lessons */}
                             <section className="space-y-6">
                                 <h2 className="text-lg font-semibold">Lessons</h2>
-                                {lesson && (
-                                        <section key={lesson.id} className="mb-6 rounded-lg border p-5">
+
+                                {plan.lessons?.map((lesson) => {
+                                    const isCompleted = progress?.some(
+                                        p => p.lesson_id === lesson.id && p.completed
+                                    );
+
+                                    return (
+                                        <section id={lesson.id} key={lesson.id} className="mb-6 rounded-lg border p-5">
                                             <h3 className="text-lg font-semibold">
                                                 {lesson.title}
                                             </h3>
 
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                {lesson.is_gdpr && (
+                                                    <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
+                                                        Mandatory (GDPR)
+                                                    </span>
+                                                )}
 
-                                                <div className="flex items-center gap-3">
-                                                    {lesson.is_gdpr && (
-                                                        <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
-                                                            Mandatory (GDPR)
-                                                        </span>
-                                                    )}
-
-                                                    {!isCompleted && (
-                                                        <form action={async () => {
-                                                            "use server";
-                                                            await markLessonComplete(lesson.id);
-                                                        }}>
-                                                            <button className="mt-4 rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700">
-                                                                Mark lesson complete
-                                                            </button>
-                                                        </form>
-                                                    )}
-                                                    
-                                                    {isCompleted && (
+                                                {!isCompleted ? (
+                                                    <form action={async () => {
+                                                        "use server";
+                                                        await markLessonComplete(lesson.id);
+                                                    }}>
+                                                        <button className="mt-4 rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700">
+                                                            Mark lesson complete
+                                                        </button>
+                                                    </form>
+                                                ) : (
                                                         <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-700">
                                                             Completed
                                                         </span>
                                                     )}
                                                 </div>
-                                            </div>
                                             
                                             <div className="mt-3 text-gray-700 space-y-6">
                                                 {/* lesson content */}
-                                                <p>{lesson.content}</p>
+                                                <div className="prose max-w-none">
+                                                    <ReactMarkdown components={{
+                                                        h1: ({ children }) => <h1 className="text-2xl font-bold">{children}</h1>,
+                                                        p: ({ children }) => <p className="text-gray-700">{children}</p>,
+                                                        ul: ({ children }) => <ul className="list-disc pl-5">{children}</ul>,
+                                                    }}>
+                                                        {lesson.content}
+                                                    </ReactMarkdown>
+                                                </div>
                                                 
                                                 {/* Static Help */}
                                                 <div className="rounded-lg border bg-blue-50 p-4">
@@ -198,7 +225,8 @@ export default async function LearningPlanPage({ params }: { params: Promise<{ i
                                                 </p>
                                             </div>
                                         </section>
-                                )}
+                                    );
+                                })}
                             </section>
                             
                             {/* GDPR & Ethical */}

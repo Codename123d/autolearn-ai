@@ -14,7 +14,10 @@ export default function SettingsPage() {
         dataConsent: true,
     });
     const [originalSettings, setOriginalSettings] = useState(settings);
-    const isChanged = JSON.stringify(settings) !== JSON.stringify(originalSettings);
+    const isChanged =
+        settings.darkMode !== originalSettings.darkMode ||
+        settings.emailNotifications !== originalSettings.emailNotifications ||
+        settings.dataConsent !== originalSettings.dataConsent;
     const [pageLoading, setPageLoading] = useState(true);
     const defaultSettings = {
         darkMode: false,
@@ -48,12 +51,6 @@ export default function SettingsPage() {
         fetchSettings();
     }, []);
 
-    useEffect(() => {
-        setTimeout(() => {
-            setPageLoading(false);
-        }, 500);
-    }, []);
-
     const handleSave = async () => {
         const toastId = toast.loading("Saving settings...");
 
@@ -73,13 +70,9 @@ export default function SettingsPage() {
             if (!res.ok) {
                 const { error } = await res.json();
                 toast.error("Failed: " + error, { id: toastId, duration: 3000 });
-            } else {
-                setOriginalSettings(settings);
-                toast.success("Settings saved!", { id: toastId, duration: 3000 });
-            }
+            } 
 
             setOriginalSettings(settings);
-
             toast.success("Settings saved!", { id: toastId, duration: 3000 });
         } catch (error) {
             toast.error("Failed to save settings.", { id: toastId, duration: 3000 });
@@ -142,7 +135,7 @@ export default function SettingsPage() {
                                 {loading ? "Saving..." : "Save Settings"}
                             </button>
                         {/* Reset Button */}
-                        <button onClick={() => setSettings(defaultSettings)} className="text-sm text-red-500 hover:underline">
+                        <button onClick={() => { setSettings(defaultSettings); toast("Reset to default values"); }} className="text-sm text-red-500 hover:underline">
                             Reset to Default
                         </button>
 

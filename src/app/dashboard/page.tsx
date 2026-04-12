@@ -3,6 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { requireUser } from "@/lib/auth/requireUser";
 import UploadElement from "@/components/UploadElement";
+import GlobalAIBox from "@/components/GlobalAIBox";
 
 export default async function DashboardPage() {
     const { user, supabase } = await requireUser("/dashboard");
@@ -133,9 +134,7 @@ export default async function DashboardPage() {
                         {/* Right column */}
                         <section className="space-y-6">
                             <Card title="AI Assistant">
-                                <p className="text-sm text-gray-600">
-                                    How can I automate scheduling meetings?
-                                </p>
+                                <GlobalAIBox />
                             </Card>
 
                             <Card title="Upload Job Document">

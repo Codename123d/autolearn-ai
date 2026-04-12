@@ -2,7 +2,7 @@
 "use client";
 import { User, Mail } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 type Strength = {
@@ -38,6 +38,8 @@ export default function RegisterCard() {
     const strength = getPasswordStrength(password);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const supabase = createClient();
 
     async function handleRegister() {
         setLoading(true);
@@ -110,7 +112,7 @@ export default function RegisterCard() {
                     </label>
 
                     {/* Create Account */}
-                    <button onClick={handleRegister} disabled={loading} className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-semibold shadow-lg hover:opacity-90 transition">
+                    <button type="button" onClick={handleRegister} disabled={loading} className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-semibold shadow-lg hover:opacity-90 transition">
                         Create Account
                     </button>
 

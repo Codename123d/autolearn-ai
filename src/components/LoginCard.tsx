@@ -2,7 +2,7 @@
 "use client";
 import { Mail, Lock, Eye } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createClient} from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginCard() {
@@ -16,12 +16,16 @@ export default function LoginCard() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [remeberMe, setremeberMe] = useState(true);
 
     async function handleLogin() {
         setLoading(true);
         setError(null);
+        
+        // Create client based on checkbox
+        const supabase = createClient(remeberMe);
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
@@ -29,7 +33,16 @@ export default function LoginCard() {
         if (error) {
             setError(error.message);
         } else {
-            router.push(redirectTo);
+           if (!remeberMe){
+                // Force session to NOT persist
+                sessionStorage.setItem(
+                    "supabase.auth.token",
+                    JSON.stringify(data.session)
+                );
+                localStorage.removeItem("supabase.auth.token");
+           }
+
+           router.push(redirectTo);
         }
 
         setLoading(false);
@@ -62,7 +75,7 @@ export default function LoginCard() {
                 {/* Remember / Forgot */}
                 <div className="flex items-center justify-between text-sm mb-8">
                     <label className="flex items-center gap-2 text-slate-600">
-                        <input type="checkbox" className="rounded" /> Remember me
+                        <input type="checkbox" checked={remeberMe} onChange={(e) => setremeberMe(e.target.checked)} className="rounded" /> Remember me
                     </label>
                     <a href="#" className="text-indigo-600 hover:underline">
                         Forgot password?
