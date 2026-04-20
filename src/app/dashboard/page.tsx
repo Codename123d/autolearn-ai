@@ -4,6 +4,7 @@ import Topbar from "@/components/Topbar";
 import { requireUser } from "@/lib/auth/requireUser";
 import UploadElement from "@/components/UploadElement";
 import GlobalAIBox from "@/components/GlobalAIBox";
+import AutomationGuide from "@/components/AutomationGuide";
 
 export default async function DashboardPage() {
     const { user, supabase } = await requireUser("/dashboard");
@@ -51,6 +52,21 @@ export default async function DashboardPage() {
     });
 
     const safePlans = plans ?? [];
+
+    const { data: certificates } = await supabase
+        .from("certificates")
+        .select(`
+            id,
+            certificate_id,
+            created_at,
+            learning_plans (
+                id,
+                title
+            )    
+        `)
+        .eq("user_id", user.id)
+        .order("issued_at", { ascending: false });
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 p-6">
@@ -116,18 +132,16 @@ export default async function DashboardPage() {
                         {/* Middle column */}
                         <section className="space-y-6">
                             <Card title="Automation Guide">
-                                <StepItem step="Step 1" text="Identify repetitive weekly tasks." />
-                                <StepItem step="Step 2" text="Generate AI automation plan" />
-                                <StepItem step="Step 3" text="Draft AI-assisted outputs" />
+                                <AutomationGuide />
                             </Card>
 
                             <Card title="Skill Baseline Quiz" badge="Must Have">
                                 <p className="text-sm text-gray-600 mb-4">
                                     Assess your current skills to tailor your learning plan.
                                 </p>
-                                <button className="px-4 py-2 bg-indigo-500 text-white rounded-lg">
+                                <a href="/quiz" className="block text-center px-4 py-2 bg-indigo-500 text-white rounded-lg">
                                     Start Quiz
-                                </button>
+                                </a>
                             </Card>
                         </section>
 
@@ -147,6 +161,31 @@ export default async function DashboardPage() {
                                     <Stat label="Lessons Done" value={completedLessons} />
                                     <Stat label="Total Lessons" value={totalLessons} />
                                 </div>
+                            </Card>
+
+                            <Card title="My Certificates">
+                                {certificates && certificates.length > 0 ? (
+                                    certificates.map((cert: any) => (
+                                        <div key={cert.id} className="flex justify-between items-center py-3 boeder-b last:border-none">
+                                            <div>
+                                                <p className="text-sm font-medium">
+                                                    {cert.learning_plans?.title}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(cert.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div> 
+
+                                            <a href={`/api/certificate/${cert.learning_plans?.id}`} className="text-indigo-600 text-sm hover:underline">
+                                                Download
+                                            </a>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-500">
+                                        No certificates yet
+                                    </p>
+                                )}
                             </Card>
                         </section>
                     </main>
