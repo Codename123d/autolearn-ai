@@ -9,19 +9,28 @@ export async function GET(req: Request) {
     if (!q) return NextResponse.json({ results: [] });
 
     const supabase = await createSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return NextResponse.json({ results: [] });
+    }
 
     // Search learning plans
     const { data: plans } = await supabase
         .from("learning_plans")
-        .select("id, title, learning_plan_id")
+        .select("id, title")
         .ilike("title", `%${q}%`)
+        .eq("user_id", user.id)
         .limit(5);
+
+    const planIds = (plans || []).map(p => p.id);
 
     // Search lessons
     const { data: lessons } = await supabase
         .from("lessons")
         .select("id, title, learning_plan_id")
         .ilike("title", `%${q}%`)
+        .eq("learning_plan_id", planIds)
         .limit(5);
     
     // Merge results

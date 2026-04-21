@@ -75,7 +75,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                 const data = await res.json();
 
                 if (data.plan?.id) {
-                    router.push(`/learning-plan/${data.plan.id}`);
+                    router.push(`/learning-plans/${data.plan.id}`);
                 }
             } catch (err) {
                 console.error("Error checking active plan:", err);

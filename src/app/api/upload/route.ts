@@ -106,13 +106,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
         }
 
-        console.log("Extracted text:", extractedText);
-
         const parsed = parseDocument(extractedText);
 
         const redactedText = redactPII(extractedText);
-
-        console.log("Redacted text:", redactedText);
 
         const cookieStore = await cookies();
         const supabase = createServerClient(
@@ -129,6 +125,10 @@ export async function POST(req: Request) {
 
         // get user
         const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         const { data: doc, error } = await supabase
             .from("uploaded_documents")

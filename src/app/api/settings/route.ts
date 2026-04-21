@@ -57,6 +57,10 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
 
+    if (!body.input || typeof body.input !== "string") {
+        return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    }
+
     const { darkMode, emailNotifications, dataConsent } = body;
 
     if (
