@@ -102,3 +102,21 @@ export type GenerateRequestBody = {
     goals: string;
     skillLevel?: string;
 };
+
+export type Plan = {
+    id: string;
+    title: string;
+    status: string | null;
+    lessons: Lesson[] | null;
+};
+
+export type LibraryPlan = {
+    id: string;
+    title: string;
+    status: string | null;
+    lessons: {
+        title?: string;
+        is_gdpr?: boolean;
+        lesson_order?: number;
+    }[] | null;
+};

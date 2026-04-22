@@ -99,7 +99,7 @@ export async function GET(req: Request, { params }: { params: { planId: string }
         )
     );
 
-    //  Validation
+    // Validation
     if (completedLessons.length !== lessons.length || incompleteGdpr) {
         return NextResponse.json(
             { error: "You must complete all lessons (including GDPR)." },

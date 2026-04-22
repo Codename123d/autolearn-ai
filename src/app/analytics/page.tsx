@@ -37,19 +37,19 @@ export default async function AnalyticsPage() {
             : 0;
     
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gradient-indigo-500 via-blue-500 to-cyan-400 p-6">
-            <div className="flex h-full w-full rounded-3xl overflow-hidden bg-white shadow-2xl">
+        <main className="flex-1 min-h-screen flex bg-gradient-to-br from-gradient-indigo-500 via-blue-500 to-cyan-400 p-6">
+            <div className="flex w-full max-w-7xl mx-auto rounded-3xl overflow-hidden bg-white shadow-2xl">
                 <Sidebar />
 
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col bg-slate-50">
                     <Topbar title="Analytics" />
 
-                    <main className="p-8 grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50">
+                    <main className="flex-1 p-8 grid-cols-1 md:grid-cols-3 gap-6 content-start">
                         <StatCard label="Plans Created" value={totalPlans} />
                         <StatCard label="Total Lessons" value={totalLessons} />
                         <StatCard label="Completion Lessons" value={completedLessons} />
 
-                        <div className="col-span-3 bg-white p-6 rounded-2xl shadow">
+                        <div className="col-span-1 md:col-span-3 bg-white p-6 rounded-2xl shadow">
                             <h2 className="text-lg font-semibold mb-4">Completion Rate</h2>
 
                             <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -63,7 +63,7 @@ export default async function AnalyticsPage() {
                     </main>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }
 

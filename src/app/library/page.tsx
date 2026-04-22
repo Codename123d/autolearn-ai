@@ -3,13 +3,14 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/requireUser";
+import { LibraryPlan } from "@/types";
 
 export default async function LibraryPage() {
     const { user, supabase } = await requireUser("/library");
 
     const { data: plans, error } = await supabase
         .from("learning_plans")
-        .select("id, title, created_at, status, lessons(title, is_gdpr)")
+        .select("id, title, created_at, status, lessons(title, is_gdpr, lesson_order)")
         .order("created_at", { ascending: false })
         .eq("user_id", user.id);
 
@@ -18,20 +19,20 @@ export default async function LibraryPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
-            <div className="mx-auto max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+        <main className="min-h-screen flex bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">
+            <div className="mx-auto max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-1">
 
                 {/* Sidebar */}
                 <Sidebar />
 
                 {/* Main Content */}
-                <div className="flex-1 bg-slate-50">
+                <div className="flex-1 flex flex-col bg-slate-50">
 
                     {/*  Top Bar  */}
                     <Topbar title="Library" />
 
                     {/* Page Content */}
-                    <div className="p-8 space-y-8">
+                    <div className="p-8 space-y-8 flex-1">
 
                         {/* Header */}
                         <div>
@@ -61,24 +62,14 @@ export default async function LibraryPage() {
     );
 }
 
-/*--------------------------------------------------------*/
-/* Components */
-/*--------------------------------------------------------*/
-type Lesson = {
-    title: string;
-    is_gdpr: boolean;
-};
+function LibraryCard({ plan }: { plan: LibraryPlan }) {
+    
+    const sortedLessons = [...(plan.lessons || [])].sort(
+        (a, b) => (a.lesson_order ?? 0) - (b.lesson_order ?? 0)
+    );
 
-type Plan = {
-    id: string;
-    title: string;
-    status: string | null;
-    lessons: Lesson[] | null;
-};
-
-function LibraryCard({ plan }: { plan: Plan }) {
+    const firstLesson = sortedLessons[0];
     const lessonCount = plan.lessons?.length || 0;
-    const firstLesson = plan.lessons?.[0];
 
     const status = plan.status ?? "unknown";
 
@@ -98,13 +89,13 @@ function LibraryCard({ plan }: { plan: Plan }) {
 
                 {/* Lesson Title */}
                 <p className="text-sm text-slate-500 mt-1">
-                    {firstLesson?.title ?? "Start your first lesson"} ({lessonCount} lesson{lessonCount !== 1 ? "s" : ""})
+                    {firstLesson?.title || "Start your first lesson"} ({lessonCount} lesson{lessonCount !== 1 ? "s" : ""})
                 </p>
 
                 
                 {/* Status + GDPR */}
                 <div className="flex items-center gap-2 mt-3">
-                    {plan.lessons?.some(l => l.is_gdpr) && (
+                    {plan.lessons?.some(l => l.is_gdpr === true) && (
                         <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
                             GDPR
                         </span>    
