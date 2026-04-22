@@ -2,9 +2,10 @@
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { requireUser } from "@/lib/auth/requireUser";
-import UploadElement from "@/components/UploadElement";
 import GlobalAIBox from "@/components/GlobalAIBox";
 import AutomationGuide from "@/components/AutomationGuide";
+import { CardProps, PlanItemProps, StatCardProps } from "@/types";
+import DashboardUploadHandler from "@/components/DashboaedUploadHandler";
 
 export default async function DashboardPage() {
     const { user, supabase } = await requireUser("/dashboard");
@@ -126,7 +127,6 @@ export default async function DashboardPage() {
                                     </a>
                                 </Card>
                             )}
-
                         </section>
 
                         {/* Middle column */}
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
                             </Card>
 
                             <Card title="Upload Job Document">
-                                <UploadElement />
+                                <DashboardUploadHandler />
                             </Card>
 
                             <Card title="Quick Stats">
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
     );
 }
 
-function Card({ title, children, badge }: any) {
+function Card({ title, children, badge }: CardProps) {
     return (
         <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
@@ -211,7 +211,7 @@ function Card({ title, children, badge }: any) {
     );
 }
 
-function PlanItem({ id, title, meta }: any) {
+function PlanItem({ id, title, meta }: PlanItemProps) {
     return (
         <a href={`/learning-plans/${id}`} className="flex justify-between items-center py-3 border-b last:border-none hover:bg-gray-50 px-2 rounded">
             <span className="text-sm">{title}</span>
@@ -220,16 +220,7 @@ function PlanItem({ id, title, meta }: any) {
     );
 }
 
-function StepItem({ step, text }: any) {
-    return (
-        <div className="mb-4">
-            <p className="text-sm font-medium">{step}</p>
-            <p className="text-sm text-gray-600">{text}</p>
-        </div>
-    );
-}
-
-function Stat({ label, value }: any) {
+function Stat({ label, value }: StatCardProps) {
     return (
         <div>
             <p className="text-2xl font-bold">{value}</p>

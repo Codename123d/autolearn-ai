@@ -1,11 +1,12 @@
-// src/app/api/save-quizz/route.ts
+// src/app/api/save-quiz/route.ts
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { QuizRequest } from "@/types";
 
 export async function POST(request: Request) {
     try{
-        const body = await request.json();
+        const body: QuizRequest = await request.json();
         const { score, level } = body;
         const cookieStore = await cookies();
 
@@ -34,7 +35,11 @@ export async function POST(request: Request) {
             if (error) throw error;
 
         return NextResponse.json({ success: true });
-    } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 500 });
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            return NextResponse.json({ error: err.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
     }
 }

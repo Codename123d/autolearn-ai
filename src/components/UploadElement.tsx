@@ -1,7 +1,8 @@
 // src/components/UploadElement.tsx
 "use client";
+import { UploadElementProps } from "@/types";
 
-export default function UploadElement({ onParsed }: any) {
+export default function UploadElement({ onParsed }: UploadElementProps) {
     return (
         <div>
             <p className="text-sm text-gray-500 mb-4">
@@ -28,13 +29,8 @@ export default function UploadElement({ onParsed }: any) {
                                 throw new Error(data.error);
                             }
 
-                            // fetch parsed data
-                            const docRes = await fetch(`/api/get-document?docId=${data.documentId}`);
-                            const docData = await docRes.json();
-
-                            // send to parent form
-                            if (docData?.final_text) {
-                                onParsed(docData.final_text);
+                            if (data?.parsed) {
+                                onParsed?.(data.parsed, data.documentId);
                             }
                         } catch (err) {
                             console.error("Upload error:", err);

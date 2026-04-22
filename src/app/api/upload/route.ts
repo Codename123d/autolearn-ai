@@ -4,15 +4,16 @@ import mammoth from "mammoth";
 import * as pdf from "pdf-parse";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { ParsedDocument } from "@/types";
 
 export const runtime = "nodejs";
 
-function parseDocument(text: string) {
+function parseDocument(text: string): ParsedDocument {
     const lines = text.split("\n").map(l => l.trim());
 
     let jobRole = "";
-    let tasks: string[] = [];
-    let goals: string[] = [];
+    const tasks: string[] = [];
+    const goals: string[] = [];
 
     let currentSection: "tasks" | "goals" | null = null;
 
@@ -92,7 +93,7 @@ export async function POST(req: Request) {
 
         // PDF
         else if (fileType === "application/pdf") {
-            const data = await (pdf as any)(buffer);
+            const data = await (pdf as unknown as (b: Buffer) => Promise<{ text: string }>)(buffer);
             extractedText = data.text;
         }
 
@@ -155,8 +156,13 @@ export async function POST(req: Request) {
             parsed
         });
 
-    } catch (err) {
+    } catch (err: unknown) {
         console.error(err);
+
+        if (err instanceof Error) {
+            return NextResponse.json({ error: err.message }, { status: 500 });
+        }
+
         return NextResponse.json({ error: "Failed to process file" }, { status: 500 });
     }
 }

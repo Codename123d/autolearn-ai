@@ -4,10 +4,10 @@
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 import UploadElement from "@/components/UploadElement";
+import { ParsedJobData } from "@/types";
 
 export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: string; defaultJobRole: string; }) {
     const [jobRole, setJobRole] = useState(defaultJobRole);
@@ -21,6 +21,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
     const docId = searchParams.get("docId");
     const router = useRouter();
     const generationRef = useRef(false);
+    const loadedRef = useRef(false);
 
     async function handleGenerate() {
         if (generationRef.current) return; // HARD STOP
@@ -51,15 +52,17 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
 
             router.push(`/learning-plans`);
 
-        } catch (err: any) {
-            alert(err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                alert(err.message);
+            }
         } finally {
             generationRef.current = false; // release lock
             setLoading(false);
         }
     }
 
-    function handleParsedData(data: any) {
+    function handleParsedData(data: ParsedJobData) {
         if (data.job_role) setJobRole(data.job_role);
         if (data.seniority_level) setSeniority(data.seniority_level);
         if (data.industry) setIndustry(data.industry);
@@ -77,7 +80,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                 if (data.plan?.id) {
                     router.push(`/learning-plans/${data.plan.id}`);
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error("Error checking active plan:", err);
             }
         }
@@ -86,7 +89,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
     }, [router]);
 
     useEffect(() => {
-        if (!docId) return;
+        if (!docId || loadedRef.current) return;
 
         async function loadDocument() {
             try {
@@ -121,14 +124,13 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                     setSkillLevel(data.final_text.skill_level);
                 }
 
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error("Error loading document:", err);
             }
         }
 
-        if (docId && !tasks){
-            loadDocument();
-        }
+        loadDocument();
+        loadedRef.current = true;
     }, [docId]);
 
     useEffect(() => {
@@ -140,8 +142,10 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
                 if (data?.inferred_level) {
                     setSkillLevel(data.inferred_level);
                 }
-            } catch (err) {
-                console.error("Failed to load skill level:", err);
+            } catch (err: unknown) {
+                if (err instanceof Error) {
+                    alert(err.message);
+                }
             }
         }
 
@@ -149,7 +153,7 @@ export default function CreatePlanPage({ userId, defaultJobRole, }: { userId: st
     }, []);
 
     const isDisabled = 
-        !jobRole || !seniority || !industry || !tasks || !goals || !skillLevel || loading;
+        !jobRole.trim() || !seniority || !industry.trim() || !tasks.trim() || !goals.trim() || !skillLevel || loading;
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-500 to-teal-400 p-6">

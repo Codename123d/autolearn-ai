@@ -5,27 +5,9 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { syncUserProgress } from "@/lib/actions/progress";
 import Link from "next/link";
+import { StatsCardProps, AchievementDef, SkillType } from "@/types";
 
 export default async function ProfilePage() {
-
-    type Stat = {
-        label: string;
-        value: string;
-        icon: string;
-    };
-
-    type AchievementDef = {
-        id: string;
-        title: string;
-        description: string;
-        icon: string;
-    };
-
-    type SkillType = {
-        label: string;
-        level: string;
-        percentage: number;
-    };
 
     // Protect page & get supabase + user
     const { user, supabase } = await requireUser("/profile");
@@ -222,7 +204,7 @@ export default async function ProfilePage() {
     );
 }
 
-function StatCard({ icon, label, value }: any) {
+function StatCard({ icon, label, value }: StatsCardProps) {
     return (
         <div className="rounded-xl border p-4 flex flex-col items-center text-center">
             <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">

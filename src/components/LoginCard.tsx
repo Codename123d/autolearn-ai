@@ -77,7 +77,7 @@ export default function LoginCard() {
                     <label className="flex items-center gap-2 text-slate-600">
                         <input type="checkbox" checked={remeberMe} onChange={(e) => setremeberMe(e.target.checked)} className="rounded" /> Remember me
                     </label>
-                    <a href="#" className="text-indigo-600 hover:underline">
+                    <a href="/forgot-password" className="text-indigo-600 hover:underline">
                         Forgot password?
                     </a>
                 </div>
@@ -107,8 +107,8 @@ export default function LoginCard() {
 
                 {/* SignUp */}
                 <p className="text-center text-sm text-gray-600 mt-8">
-                    Don't have an account?{" "}
-                    <a href="#" className="text-indigo-600 hover:underline">
+                    Don&apos;t have an account?{" "}
+                    <a href="/register" className="text-indigo-600 hover:underline">
                         Sign up
                     </a>
                 </p>

@@ -26,7 +26,7 @@ export default function Sidebar() {
                 <SidebarLink href="/analytics" icon={<BarChart2 size={18} />} label="Analytics" pathname={pathname} />
             </nav>
             <div className="px-4 py-4 border-t border-white/10">
-                <SidebarLink href="/settings" icon={<Settings size={18} />} label="Settings" pathname="{pathname}" />
+                <SidebarLink href="/settings" icon={<Settings size={18} />} label="Settings" pathname={pathname} />
             </div>
         </aside >
     );

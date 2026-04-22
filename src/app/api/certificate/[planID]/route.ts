@@ -4,6 +4,7 @@ import PDFDocument from "pdfkit";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import crypto from "crypto";
+import { Lesson, LessonProgress, PlanWithLessons } from "@/types";
 
 export async function GET(req: Request, { params }: { params: { planId: string } }) {
     const { planId } = params;
@@ -64,7 +65,7 @@ export async function GET(req: Request, { params }: { params: { planId: string }
         .select("id, title, lessons (id, is_gdpr)")
         .eq("id", planId)
         .eq("user_id", user.id)
-        .single();
+        .single()  as { data: PlanWithLessons | null };
 
     if (!plan) {
         return NextResponse.json({ error: "Plan not found" }, { status: 404 });
@@ -85,13 +86,13 @@ export async function GET(req: Request, { params }: { params: { planId: string }
         );
     }
 
-    const completedLessons = lessons.filter((lesson: any) =>
-        progress?.some(
+    const completedLessons = (lessons as Lesson[]).filter((lesson) =>
+        (progress as LessonProgress[] | null)?.some(
             (p) => p.lesson_id === lesson.id && p.completed
         )
     );
 
-    const incompleteGdpr = lessons.some((lesson: any) =>
+    const incompleteGdpr = (lessons as Lesson[]).some((lesson) =>
         lesson.is_gdpr &&
         !progress?.some(
             (p) => p.lesson_id === lesson.id && p.completed

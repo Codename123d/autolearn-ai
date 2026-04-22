@@ -6,8 +6,8 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import ReviewEditor from "@/components/ReviewEditor";
 
-export default async function ReviewPage({ params }: any) {
-    const { id } = await params;
+export default async function ReviewPage({ params }: { params: { id: string }; }) {
+    const { id } = params;
     const cookieStore = await cookies();
 
     const supabase = await createServerClient(
@@ -30,6 +30,10 @@ export default async function ReviewPage({ params }: any) {
 
     if (!doc) {
         return <p className="p-10">Document not found</p>;
+    }
+
+    if (!id) {
+        return <p className="p-10">Invalid document ID</p>;
     }
 
     return (

@@ -3,8 +3,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ReviewEditorProps } from "@/types";
 
-export default function ReviewEditor({ docId, originalText, redactedText }: any){
+export default function ReviewEditor({ docId, originalText, redactedText }: ReviewEditorProps){
     const [text, setText] = useState(redactedText);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -30,8 +31,12 @@ export default function ReviewEditor({ docId, originalText, redactedText }: any)
 
             // redirect to create plan with doc
             router.push(`/create-plan?docId=${docId}`);
-        } catch (err : any) {
-            alert(err.message);
+        } catch (err : unknown) {
+            if (err instanceof Error) {
+                alert(err.message);
+            } else {
+                alert("Something went wrong");
+            }
         } finally {
             setLoading(false);
         }
