@@ -3,6 +3,7 @@ import OpenAi from "openai"
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { GenerateRequestBody } from "@/types";
 
 const openai = new OpenAi({
     apiKey: process.env.OPENAI_API_KEY!,
@@ -40,15 +41,6 @@ export async function POST(req: Request) {
         if (!user || authError) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        type GenerateRequestBody = {
-            jobRole: string;
-            seniority?: string;
-            industry?: string;
-            tasks: string;
-            goals: string;
-            skillLevel?: string;
-        };
 
         const body: GenerateRequestBody = await req.json();
 

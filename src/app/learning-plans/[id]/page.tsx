@@ -7,24 +7,9 @@ import Topbar from "@/components/Topbar";
 import AskAIBox from "@/components/AskAIBox";
 import ReactMarkdown from "react-markdown";
 import ScrollToLesson from "@/components/ScrollToLesson";
+import { Lesson, LearningPlan } from "@/types";
 
 export default async function LearningPlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ lesson?: string }> }) {
-    
-    type Lesson = {
-        id: string;
-        title: string;
-        content: string;
-        is_gdpr: boolean;
-    };
-
-    type LearningPlan = {
-        id: string;
-        title: string;
-        introduction: string;
-        estimated_duration?: string;
-        final_recap: string;
-        lessons: Lesson[];
-    };
 
     const cookieStore = await cookies();
     const { id } = await params;
@@ -214,7 +199,7 @@ export default async function LearningPlanPage({ params, searchParams }: { param
                                                     </ul>
                                                 </div>
 
-                                                <AskAIBox lessonContent={lesson.content} />
+                                                <AskAIBox lessonContent={lesson.content || ""} />
                                             </div>
 
                                             <div className="mt-4 rounded bg-gray-50 p-3 text-sm">

@@ -3,16 +3,21 @@ import { ReactNode } from "react";
 export type Lesson = {
     id: string;
     title?: string;
-    learning_plan_id: string;
+    learning_plan_id?: string;
+    content?: string;
     lesson_order?: number;
     is_gdpr?: boolean;
 };
 
 export type LearningPlan = {
-    id: string;
-    title: string;
-    user_id: string;
-};
+        id: string;
+        title: string;
+        introduction?: string;
+        estimated_duration?: string;
+        final_recap?: string;
+        lessons?: Lesson[];
+        user_id: string;
+    };
 
 export type LessonProgress = {
     lesson_id: string;
@@ -87,4 +92,13 @@ export type SkillType = {
     label: string;
     level: string;
     percentage: number;
+};
+
+export type GenerateRequestBody = {
+    jobRole: string;
+    seniority?: string;
+    industry?: string;
+    tasks: string;
+    goals: string;
+    skillLevel?: string;
 };
