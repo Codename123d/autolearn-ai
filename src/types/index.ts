@@ -120,3 +120,17 @@ export type LibraryPlan = {
         lesson_order?: number;
     }[] | null;
 };
+
+export type LinePoint = {
+    date: string;
+    completed: number;
+};
+
+export type Props = {
+    chartData: any[];
+    lineData: any[];
+    pieData: any[];
+    totalPlans: number;
+    totalLessons: number;
+    completedLessons: number;
+};
