@@ -82,9 +82,6 @@ export default async function AnalyticsPage() {
 
                 <div className="flex-1 flex flex-col bg-slate-50">
                     <Topbar title="Analytics" />
-                    <pre className="text-xs">
-                        {JSON.stringify({ chartData, lineData, pieData }, null, 2)}
-                    </pre>
                     <AnalyticsCharts chartData={chartData} lineData={lineData} pieData={pieData} totalPlans={totalPlans} totalLessons={totalLessons} completedLessons={completedLessons} />
                 </div>
             </div>
