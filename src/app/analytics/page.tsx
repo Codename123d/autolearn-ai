@@ -9,22 +9,36 @@ export default async function AnalyticsPage() {
     const { user, supabase } = await requireUser();
 
     // Fetch plans
-    const { data: plans } = await supabase
+    const { data: plans, error: plansError } = await supabase
         .from("learning_plans")
         .select("id")
         .eq("user_id", user.id);
 
+    if (plansError) {
+        console.error("Error fetching plans:", plansError);
+    }
+
+    const planIds = plans?.map(p => p.id) || [];
+
     // Fetch lessons
-    const { data: lessons } = await supabase
+    const { data: lessons, error: lessonsError } = await supabase
         .from("lessons")
         .select("id, learning_plan_id")
-        .eq("user_id", user.id);
+        .in("learning_plan_id", planIds);
+    
+    if (lessonsError) {
+        console.error("Error fetching lessons:", lessonsError);
+    }
 
     // Fetch progress
-    const { data: progress } = await supabase
+    const { data: progress, error: progressError } = await supabase
         .from("lesson_progress")
-        .select("lesson_id, completed, created_at")
+        .select("lesson_id, completed, completed_at")
         .eq("user_id", user.id);
+
+    if (progressError) {
+        console.error("Error fetching progress:", progressError);
+    }
 
     const totalPlans = plans?.length || 0;
     const totalLessons = lessons?.length || 0;
@@ -54,7 +68,7 @@ export default async function AnalyticsPage() {
         }) || [];
 
     const lineData: LinePoint[] = (progress ?? []).reduce<LinePoint[]>((acc, p) => { 
-        const date = new Date(p.created_at).toLocaleDateString();
+        const date = new Date(p.completed_at).toLocaleDateString();
             
         const existing = acc.find(x => x.date === date);
 
